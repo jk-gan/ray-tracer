@@ -6,9 +6,22 @@ use ray::Ray;
 use vec3::{Color, Point3, Vec3};
 
 fn ray_color(ray: &Ray) -> Color {
+    if is_hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, ray) {
+        return Color::new(1.0, 0.0, 0.0);
+    }
+
     let unit_direction = vec3::unit_vector(ray.direction);
     let t = 0.5 * (unit_direction.y + 1.0);
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+}
+
+fn is_hit_sphere(center: Point3, radius: f32, ray: &Ray) -> bool {
+    let oc = ray.origin - center;
+    let a = vec3::dot(&ray.direction, &ray.direction);
+    let b = 2.0 * vec3::dot(&oc, &ray.direction);
+    let c = vec3::dot(&oc, &oc) - radius * radius;
+    let discriminant = b * b - 4.0 * a * c;
+    discriminant > 0.0
 }
 
 fn main() {
