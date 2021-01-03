@@ -1,8 +1,8 @@
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Sub, SubAssign};
 
-type Point3 = Vec3; // 3D point
-type Color = Vec3; // RGB color
+pub type Point3 = Vec3; // 3D point
+pub type Color = Vec3; // RGB color
 
 impl fmt::Display for Color {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -10,8 +10,8 @@ impl fmt::Display for Color {
             f,
             "{} {} {}",
             ((255.999 * self.x) as i32),
-            ((255.999 * self.x) as i32),
-            ((255.999 * self.x) as i32)
+            ((255.999 * self.y) as i32),
+            ((255.999 * self.z) as i32)
         )
     }
 }
