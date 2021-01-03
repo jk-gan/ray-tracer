@@ -1,4 +1,5 @@
 use std::io::{stderr, Write};
+mod ray;
 mod vec3;
 
 use vec3::{Color, Vec3};
