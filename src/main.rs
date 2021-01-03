@@ -18,17 +18,18 @@ fn ray_color(ray: &Ray) -> Color {
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
 }
 
+// Quadratic equation
 fn hit_sphere(center: Point3, radius: f32, ray: &Ray) -> f32 {
     let oc = ray.origin - center;
-    let a = vec3::dot(&ray.direction, &ray.direction);
-    let b = 2.0 * vec3::dot(&oc, &ray.direction);
-    let c = vec3::dot(&oc, &oc) - radius * radius;
-    let discriminant = b * b - 4.0 * a * c;
+    let a = ray.direction.length_square();
+    let half_b = vec3::dot(&oc, &ray.direction);
+    let c = oc.length_square() - radius * radius;
+    let discriminant = half_b * half_b - a * c;
 
     if discriminant < 0.0 {
         return -1.0;
     } else {
-        return (-b - discriminant.sqrt()) / (2.0 * a);
+        return (-half_b - discriminant.sqrt()) / a;
     }
 }
 
