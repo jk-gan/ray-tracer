@@ -20,6 +20,11 @@ impl Ray {
     }
 
     pub fn at(&self, t: f64) -> Point3 {
+        // P(t) = A + tb
+        // where
+        //      A = ray origin
+        //      b = ray direction
+
         self.origin + (t * self.direction)
     }
 }
