@@ -9,14 +9,14 @@ use ray_tracer::{
     material::{Dielectric, Lambertian, Metal},
     random_f64, random_in_hemisphere, random_in_unit_sphere, random_unit_vertor,
     ray::Ray,
-    Point3,
+    Point3, PI,
 };
 
 // Image
-const ASPECT_RATIO: f32 = 16.0 / 9.0;
+const ASPECT_RATIO: f64 = 16.0 / 9.0;
 // const WIDTH: u32 = 600;
 const WIDTH: u32 = 900;
-const HEIGHT: u32 = (WIDTH as f32 / ASPECT_RATIO) as u32;
+const HEIGHT: u32 = (WIDTH as f64 / ASPECT_RATIO) as u32;
 // const SAMPLES_PER_PIXEL: usize = 100;
 const SAMPLES_PER_PIXEL: usize = 130;
 const MAX_DEPTH: usize = 50;
@@ -99,7 +99,7 @@ fn main() {
     )));
     world.add(Box::new(Sphere::new(
         Point3::new(-1.0, 0.0, -1.0),
-        -0.4,
+        -0.45,
         material_left.clone(),
     )));
     world.add(Box::new(Sphere::new(
@@ -109,7 +109,13 @@ fn main() {
     )));
 
     // Camera
-    let camera = Camera::new();
+    let camera = Camera::new(
+        Point3::new(-2.0, 2.0, 1.0),
+        Point3::new(0.0, 0.0, -1.0),
+        DVec3::new(0.0, 1.0, 0.0),
+        20.0,
+        ASPECT_RATIO,
+    );
 
     // Render
     println!("P3");

@@ -2,8 +2,6 @@ use glam::DVec3;
 
 use crate::{ray::Ray, Point3};
 
-const ASPECT_RATIO: f32 = 16.0 / 9.0;
-
 pub struct Camera {
     // aspect_ratio: f32,
     // viewport_height: f32,
@@ -16,30 +14,40 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new() -> Self {
-        let viewport_height = 2.0;
-        let viewport_width = ASPECT_RATIO * viewport_height;
-        let focal_length = 1.0;
+    pub fn new(
+        look_from: Point3,
+        look_at: Point3,
+        vup: DVec3,
+        vfov: f64, // vertical field-of-view in degrees
+        aspect_ratio: f64,
+    ) -> Self {
+        let theta = vfov.to_radians();
+        let h = (theta / 2.0).tan();
+        let viewport_height = 2.0 * h;
+        let viewport_width = aspect_ratio * viewport_height;
 
-        let origin = Point3::new(0.0, 0.0, 0.0);
-        let horizontal = DVec3::new(viewport_width as f64, 0.0, 0.0);
-        let vertical = DVec3::new(0.0, viewport_height as f64, 0.0);
+        let w = (look_from - look_at).normalize();
+        let u = vup.cross(w).normalize();
+        let v = w.cross(u);
+
+        // let focal_length = 1.0;
+
+        let origin = look_from;
+        let horizontal = viewport_width * u;
+        let vertical = viewport_height * v;
 
         Self {
-            origin: DVec3::new(0.0, 0.0, 0.0),
-            horizontal: DVec3::new(viewport_width as f64, 0.0, 0.0),
-            vertical: DVec3::new(0.0, viewport_height as f64, 0.0),
-            lower_left_corner: origin
-                - horizontal / 2.0
-                - vertical / 2.0
-                - DVec3::new(0.0, 0.0, focal_length),
+            origin,
+            horizontal,
+            vertical,
+            lower_left_corner: origin - horizontal / 2.0 - vertical / 2.0 - w,
         }
     }
 
-    pub fn get_ray(&self, u: f64, v: f64) -> Ray {
+    pub fn get_ray(&self, s: f64, t: f64) -> Ray {
         Ray::new(
             self.origin,
-            self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin,
+            self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin,
         )
     }
 }
