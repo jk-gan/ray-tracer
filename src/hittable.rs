@@ -51,7 +51,7 @@ impl Sphere {
         Self {
             center,
             radius,
-            material: material.clone(),
+            material,
         }
     }
 }
