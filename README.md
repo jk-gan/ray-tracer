@@ -8,3 +8,13 @@
 </p>
 
 ![final-render](.github/screenshots/final-render.png)
+
+## Instructions
+
+```zsh
+❯ cargo build --release
+   Compiling ray-tracer v0.1.0 (/Users/xxx/ray-tracer)
+    Finished release [optimized] target(s) in 0.60s
+
+❯ ./target/release/ray-tracer >> image.ppm
+```
