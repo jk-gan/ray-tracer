@@ -3,6 +3,7 @@ pub mod color;
 pub mod hittable;
 pub mod material;
 pub mod ray;
+pub mod scene;
 
 use glam::DVec3;
 use rand::Rng;

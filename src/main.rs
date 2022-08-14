@@ -1,59 +1,33 @@
 use glam::DVec3;
-use indicatif::ProgressBar;
 use ray_tracer::{
-    camera::Camera,
-    color::{write_color, Color},
-    hittable::{Hittable, HittableList, Sphere},
-    material::Material,
-    random_f64, random_f64_range,
-    ray::Ray,
+    color::Color, hittable::Sphere, material::Material, random_f64, random_f64_range, scene::Scene,
     Point3,
 };
-use rayon::prelude::*;
 use std::sync::Arc;
 
 // Image
-const ASPECT_RATIO: f64 = 3.0 / 2.0;
-const WIDTH: u32 = 1200;
-const HEIGHT: u32 = (WIDTH as f64 / ASPECT_RATIO) as u32;
-const SAMPLES_PER_PIXEL: usize = 500;
+const ASPECT_RATIO: f64 = 16.0 / 9.0;
+const WIDTH: u32 = 1600;
+// const HEIGHT: u32 = (WIDTH as f64 / ASPECT_RATIO) as u32;
+const SAMPLES_PER_PIXEL: usize = 100;
 const MAX_DEPTH: usize = 50;
 
-fn ray_color(ray: &Ray, world: &impl Hittable, depth: usize) -> Color {
-    // if we've exceeded the ray bounce limit, no more light is gathered.
-    if depth <= 0 {
-        return Color::new(0.0, 0.0, 0.0);
-    }
+fn random_scene(scene: &mut Scene) {
+    scene.set_aspect_ratio(3.0 / 2.0);
+    scene.set_image_width(1200);
+    scene.samples_per_pixel = 500;
 
-    if let Some(hitted_record) = world.hit(ray, 0.001, f64::INFINITY) {
-        let mut scattered_ray = Ray::default();
-        let mut attenuation = Color::default();
-
-        if hitted_record
-            .material
-            .scatter(ray, &hitted_record, &mut attenuation, &mut scattered_ray)
-        {
-            return attenuation * ray_color(&scattered_ray, world, depth - 1);
-        }
-
-        return Color::new(0.0, 0.0, 0.0);
-    }
-
-    let unit_direction = ray.direction().normalize();
-    let t = 0.5 * (unit_direction.y + 1.0);
-
-    // lerp
-    // blended_value = (1 - t) * start_value + t * end_value
-    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
-}
-
-fn random_scene() -> HittableList {
-    let mut world = HittableList::default();
+    scene.camera.look_from = Point3::new(13.0, 2.0, 3.0);
+    scene.camera.look_at = Point3::new(0.0, 0.0, 0.0);
+    scene.camera.vup = DVec3::new(0.0, 1.0, 0.0);
+    scene.camera.vfov = 20.0;
+    scene.camera.aperture = 0.1;
+    scene.camera.focus_dist = 10.0;
 
     let material_ground = Arc::new(Material::Lambertian {
         albedo: Color::new(0.5, 0.5, 0.5),
     });
-    world.add(Box::new(Sphere::new(
+    scene.world.add(Box::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
         material_ground.clone(),
@@ -74,7 +48,9 @@ fn random_scene() -> HittableList {
                     let albedo = Color::new(random_f64(), random_f64(), random_f64())
                         * Color::new(random_f64(), random_f64(), random_f64());
                     let sphere_material = Arc::new(Material::Lambertian { albedo });
-                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
+                    scene
+                        .world
+                        .add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
                 } else if choose_material < 0.95 {
                     // metal
                     let albedo = Color::new(
@@ -84,13 +60,17 @@ fn random_scene() -> HittableList {
                     );
                     let fuzz = random_f64_range(0.0, 0.5);
                     let sphere_material = Arc::new(Material::Metal { albedo, fuzz });
-                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
+                    scene
+                        .world
+                        .add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
                 } else {
                     // glass
                     let sphere_material = Arc::new(Material::Dielectric {
                         index_of_refraction: 1.5,
                     });
-                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
+                    scene
+                        .world
+                        .add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
                 }
             }
         }
@@ -99,7 +79,7 @@ fn random_scene() -> HittableList {
     let material_1 = Arc::new(Material::Dielectric {
         index_of_refraction: 1.5,
     });
-    world.add(Box::new(Sphere::new(
+    scene.world.add(Box::new(Sphere::new(
         Point3::new(0.0, 1.0, 0.0),
         1.0,
         material_1.clone(),
@@ -107,7 +87,7 @@ fn random_scene() -> HittableList {
     let material_2 = Arc::new(Material::Lambertian {
         albedo: Color::new(0.4, 0.2, 0.1),
     });
-    world.add(Box::new(Sphere::new(
+    scene.world.add(Box::new(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
         material_2.clone(),
@@ -116,69 +96,15 @@ fn random_scene() -> HittableList {
         albedo: Color::new(0.7, 0.6, 0.5),
         fuzz: 0.0,
     });
-    world.add(Box::new(Sphere::new(
+    scene.world.add(Box::new(Sphere::new(
         Point3::new(4.0, 1.0, 0.0),
         1.0,
         material_3.clone(),
     )));
-
-    world
 }
 
 fn main() {
-    // World
-    let world = random_scene();
-
-    // Camera
-    let look_from = Point3::new(13.0, 2.0, 3.0);
-    let look_at = Point3::new(0.0, 0.0, 0.0);
-    let vup = DVec3::new(0.0, 1.0, 0.0);
-    let dist_to_focus = 10.0;
-    let aperture = 0.1;
-
-    let camera = Camera::new(
-        look_from,
-        look_at,
-        vup,
-        20.0,
-        ASPECT_RATIO,
-        aperture,
-        dist_to_focus,
-    );
-
-    // Render
-    println!("P3");
-    println!("{} {}", WIDTH, HEIGHT);
-    println!("n255");
-
-    let total_count = HEIGHT * WIDTH as u32;
-    let progress_bar = ProgressBar::new(total_count as u64);
-
-    let image = (0..HEIGHT)
-        .into_par_iter()
-        .rev()
-        .map(|j| {
-            (0..WIDTH)
-                .map(|i| {
-                    let mut pixel_color = Color::new(0.0, 0.0, 0.0);
-
-                    for _ in 0..SAMPLES_PER_PIXEL {
-                        let u = (i as f64 + random_f64()) / (WIDTH as f64 - 1.0);
-                        let v = (j as f64 + random_f64()) / (HEIGHT as f64 - 1.0);
-
-                        let ray = camera.get_ray(u, v);
-                        pixel_color += ray_color(&ray, &world, MAX_DEPTH);
-                    }
-                    progress_bar.inc(1);
-                    pixel_color
-                })
-                .collect::<Vec<Color>>()
-        })
-        .collect::<Vec<Vec<Color>>>();
-
-    for row in image {
-        for color in row {
-            write_color(color, SAMPLES_PER_PIXEL);
-        }
-    }
+    let mut scene = Scene::new(ASPECT_RATIO, WIDTH, SAMPLES_PER_PIXEL, MAX_DEPTH);
+    random_scene(&mut scene);
+    scene.render();
 }
