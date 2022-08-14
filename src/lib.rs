@@ -21,12 +21,12 @@ pub fn random_f64_range(min: f64, max: f64) -> f64 {
 }
 
 #[inline]
-pub fn random_DVec3() -> DVec3 {
+pub fn random_dvec3() -> DVec3 {
     DVec3::new(random_f64(), random_f64(), random_f64())
 }
 
 #[inline]
-pub fn random_DVec3_range(min: f64, max: f64) -> DVec3 {
+pub fn random_dvec3_range(min: f64, max: f64) -> DVec3 {
     DVec3::new(
         random_f64_range(min, max),
         random_f64_range(min, max),
@@ -36,7 +36,7 @@ pub fn random_DVec3_range(min: f64, max: f64) -> DVec3 {
 
 pub fn random_in_unit_sphere() -> DVec3 {
     loop {
-        let p = random_DVec3_range(-1.0, 1.0);
+        let p = random_dvec3_range(-1.0, 1.0);
         if p.length_squared() >= 1.0 {
             continue;
         }

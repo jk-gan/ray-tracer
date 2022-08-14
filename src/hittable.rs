@@ -1,16 +1,11 @@
-use crate::{
-    color::Color,
-    material::{Lambertian, Material},
-    ray::Ray,
-    DVec3, Point3,
-};
+use crate::{color::Color, material::Material, ray::Ray, DVec3, Point3};
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct HitRecord {
     pub point: Point3,
     pub normal: DVec3,
-    pub material: Arc<dyn Material>,
+    pub material: Arc<Material>,
     pub t: f64,
     pub front_face: bool,
 }
@@ -29,7 +24,9 @@ impl HitRecord {
         Self {
             point: (0.0, 0.0, 0.0).into(),
             normal: (0.0, 0.0, 0.0).into(),
-            material: Arc::new(Lambertian::new(Color::new(0.0, 0.0, 0.0))),
+            material: Arc::new(Material::Lambertian {
+                albedo: Color::new(0.0, 0.0, 0.0),
+            }),
             t: 0.0,
             front_face: false,
         }
@@ -43,11 +40,11 @@ pub trait Hittable {
 pub struct Sphere {
     center: Point3,
     radius: f64,
-    material: Arc<dyn Material>,
+    material: Arc<Material>,
 }
 
 impl Sphere {
-    pub fn new(center: Point3, radius: f64, material: Arc<dyn Material>) -> Self {
+    pub fn new(center: Point3, radius: f64, material: Arc<Material>) -> Self {
         Self {
             center,
             radius,

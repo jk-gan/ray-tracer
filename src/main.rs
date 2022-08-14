@@ -1,39 +1,22 @@
-use std::sync::{atomic::AtomicPtr, Arc};
-
 use glam::DVec3;
 use indicatif::ProgressBar;
 use ray_tracer::{
     camera::Camera,
     color::{write_color, Color},
-    hittable::{HitRecord, Hittable, HittableList, Sphere},
-    material::{Dielectric, Lambertian, Metal},
-    random_f64, random_f64_range, random_in_hemisphere, random_in_unit_sphere, random_unit_vertor,
+    hittable::{Hittable, HittableList, Sphere},
+    material::Material,
+    random_f64, random_f64_range,
     ray::Ray,
-    Point3, PI,
+    Point3,
 };
+use std::sync::Arc;
 
 // Image
 const ASPECT_RATIO: f64 = 3.0 / 2.0;
-// const WIDTH: u32 = 600;
 const WIDTH: u32 = 1200;
 const HEIGHT: u32 = (WIDTH as f64 / ASPECT_RATIO) as u32;
-// const SAMPLES_PER_PIXEL: usize = 100;
 const SAMPLES_PER_PIXEL: usize = 500;
 const MAX_DEPTH: usize = 50;
-
-fn hit_sphere(sphere_center: &Point3, radius: f64, ray: &Ray) -> f64 {
-    let oc = ray.origin().clone() - sphere_center.clone();
-    let a = ray.direction().length_squared();
-    let half_b = oc.dot(*ray.direction());
-    let c = oc.length_squared() - radius * radius;
-    let discriminant = half_b * half_b - a * c;
-
-    if discriminant < 0.0 {
-        return -1.0;
-    } else {
-        return (-half_b - discriminant.sqrt()) / a;
-    }
-}
 
 fn ray_color(ray: &Ray, world: &impl Hittable, depth: usize) -> Color {
     // if we've exceeded the ray bounce limit, no more light is gathered.
@@ -53,14 +36,6 @@ fn ray_color(ray: &Ray, world: &impl Hittable, depth: usize) -> Color {
         }
 
         return Color::new(0.0, 0.0, 0.0);
-
-        // let target = hitted_record.point + random_in_hemisphere(&hitted_record.normal);
-        // return 0.5
-        //     * ray_color(
-        //         &Ray::new(hitted_record.point, target - hitted_record.point),
-        //         world,
-        //         depth - 1,
-        //     );
     }
 
     let unit_direction = ray.direction().normalize();
@@ -74,7 +49,9 @@ fn ray_color(ray: &Ray, world: &impl Hittable, depth: usize) -> Color {
 fn random_scene() -> HittableList {
     let mut world = HittableList::default();
 
-    let material_ground = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
+    let material_ground = Arc::new(Material::Lambertian {
+        albedo: Color::new(0.5, 0.5, 0.5),
+    });
     world.add(Box::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
@@ -95,7 +72,7 @@ fn random_scene() -> HittableList {
                     // diffuse
                     let albedo = Color::new(random_f64(), random_f64(), random_f64())
                         * Color::new(random_f64(), random_f64(), random_f64());
-                    let sphere_material = Arc::new(Lambertian::new(albedo));
+                    let sphere_material = Arc::new(Material::Lambertian { albedo });
                     world.add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
                 } else if choose_material < 0.95 {
                     // metal
@@ -105,30 +82,39 @@ fn random_scene() -> HittableList {
                         random_f64_range(0.5, 1.0),
                     );
                     let fuzz = random_f64_range(0.0, 0.5);
-                    let sphere_material = Arc::new(Metal::new(albedo, fuzz));
+                    let sphere_material = Arc::new(Material::Metal { albedo, fuzz });
                     world.add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
                 } else {
                     // glass
-                    let sphere_material = Arc::new(Dielectric::new(1.5));
+                    let sphere_material = Arc::new(Material::Dielectric {
+                        index_of_refraction: 1.5,
+                    });
                     world.add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
                 }
             }
         }
     }
 
-    let material_1 = Arc::new(Dielectric::new(1.5));
+    let material_1 = Arc::new(Material::Dielectric {
+        index_of_refraction: 1.5,
+    });
     world.add(Box::new(Sphere::new(
         Point3::new(0.0, 1.0, 0.0),
         1.0,
         material_1.clone(),
     )));
-    let material_2 = Arc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
+    let material_2 = Arc::new(Material::Lambertian {
+        albedo: Color::new(0.4, 0.2, 0.1),
+    });
     world.add(Box::new(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
         material_2.clone(),
     )));
-    let material_3 = Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
+    let material_3 = Arc::new(Material::Metal {
+        albedo: Color::new(0.7, 0.6, 0.5),
+        fuzz: 0.0,
+    });
     world.add(Box::new(Sphere::new(
         Point3::new(4.0, 1.0, 0.0),
         1.0,
