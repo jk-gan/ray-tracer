@@ -9,6 +9,7 @@ use ray_tracer::{
     ray::Ray,
     Point3,
 };
+use rayon::prelude::*;
 use std::sync::Arc;
 
 // Image
@@ -153,21 +154,31 @@ fn main() {
     let total_count = HEIGHT * WIDTH as u32;
     let progress_bar = ProgressBar::new(total_count as u64);
 
-    for j in (0..HEIGHT).rev() {
-        // progress_bar.set_position((HEIGHT - j) as u64);
+    let image = (0..HEIGHT)
+        .into_par_iter()
+        .rev()
+        .map(|j| {
+            (0..WIDTH)
+                .map(|i| {
+                    let mut pixel_color = Color::new(0.0, 0.0, 0.0);
 
-        for i in 0..WIDTH {
-            let mut pixel_color = Color::new(0.0, 0.0, 0.0);
-            progress_bar.inc(1);
+                    for _ in 0..SAMPLES_PER_PIXEL {
+                        let u = (i as f64 + random_f64()) / (WIDTH as f64 - 1.0);
+                        let v = (j as f64 + random_f64()) / (HEIGHT as f64 - 1.0);
 
-            for _ in 0..SAMPLES_PER_PIXEL {
-                let u = (i as f64 + random_f64()) / (WIDTH as f64 - 1.0);
-                let v = (j as f64 + random_f64()) / (HEIGHT as f64 - 1.0);
+                        let ray = camera.get_ray(u, v);
+                        pixel_color += ray_color(&ray, &world, MAX_DEPTH);
+                    }
+                    progress_bar.inc(1);
+                    pixel_color
+                })
+                .collect::<Vec<Color>>()
+        })
+        .collect::<Vec<Vec<Color>>>();
 
-                let ray = camera.get_ray(u, v);
-                pixel_color += ray_color(&ray, &world, MAX_DEPTH);
-            }
-            write_color(pixel_color, SAMPLES_PER_PIXEL);
+    for row in image {
+        for color in row {
+            write_color(color, SAMPLES_PER_PIXEL);
         }
     }
 }
