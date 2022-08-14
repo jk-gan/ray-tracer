@@ -1,6 +1,10 @@
 use glam::DVec3;
 use ray_tracer::{
-    color::Color, hittable::Sphere, material::Material, random_f64, random_f64_range, scene::Scene,
+    color::Color,
+    hittable::{MovingSphere, Sphere},
+    material::Material,
+    random_f64, random_f64_range,
+    scene::Scene,
     Point3,
 };
 use std::sync::Arc;
@@ -13,8 +17,8 @@ const SAMPLES_PER_PIXEL: usize = 100;
 const MAX_DEPTH: usize = 50;
 
 fn random_scene(scene: &mut Scene) {
-    scene.set_aspect_ratio(3.0 / 2.0);
-    scene.set_image_width(1200);
+    scene.set_aspect_ratio(16.0 / 9.0);
+    scene.set_image_width(1000);
     scene.samples_per_pixel = 500;
 
     scene.camera.look_from = Point3::new(13.0, 2.0, 3.0);
@@ -48,9 +52,13 @@ fn random_scene(scene: &mut Scene) {
                     let albedo = Color::new(random_f64(), random_f64(), random_f64())
                         * Color::new(random_f64(), random_f64(), random_f64());
                     let sphere_material = Arc::new(Material::Lambertian { albedo });
-                    scene
-                        .world
-                        .add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
+                    let center_2 = center + DVec3::new(0.0, random_f64_range(0.0, 0.5), 0.0);
+                    scene.world.add(Box::new(MovingSphere::new(
+                        center,
+                        center_2,
+                        0.2,
+                        sphere_material.clone(),
+                    )));
                 } else if choose_material < 0.95 {
                     // metal
                     let albedo = Color::new(

@@ -80,9 +80,72 @@ impl Hittable for Sphere {
         let mut hit_record = HitRecord::empty();
         hit_record.t = root;
         hit_record.point = ray.at(hit_record.t);
-        hit_record.normal = (hit_record.point - self.center) / self.radius;
 
         let outward_normal = (hit_record.point - self.center) / self.radius;
+        hit_record.set_face_normal(&ray, &outward_normal);
+        hit_record.material = self.material.clone();
+
+        Some(hit_record)
+    }
+}
+
+pub struct MovingSphere {
+    center_0: Point3, // center at time = 0
+    center_1: Point3, // center at time = 1
+    center_vec: DVec3,
+    radius: f64,
+    material: Arc<Material>,
+}
+
+impl MovingSphere {
+    pub fn new(center_0: Point3, center_1: Point3, radius: f64, material: Arc<Material>) -> Self {
+        Self {
+            center_0,
+            center_1,
+            center_vec: DVec3::from(center_1 - center_0),
+            radius,
+            material,
+        }
+    }
+
+    pub fn center(&self, time: f64) -> Point3 {
+        // Linearly interpolate from center_0 to center_1 according to time,
+        // where
+        // t = 0, yields center_0,
+        // t = 1, yields center_1
+        self.center_0 + time * self.center_vec
+    }
+}
+
+impl Hittable for MovingSphere {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let oc = ray.origin().clone() - self.center(ray.time());
+        let a = ray.direction().length_squared();
+        let half_b = oc.dot(*ray.direction());
+        let c = oc.length_squared() - self.radius * self.radius;
+
+        let discriminant = half_b * half_b - a * c;
+
+        if discriminant < 0.0 {
+            return None;
+        }
+
+        let sqrt_discriminant = discriminant.sqrt();
+
+        // find the nearest root that lies in the acceptable range
+        let mut root = (-half_b - sqrt_discriminant) / a;
+        if root < t_min || root > t_max {
+            root = (-half_b + sqrt_discriminant) / a;
+            if root < t_min || root > t_max {
+                return None;
+            }
+        }
+
+        let mut hit_record = HitRecord::empty();
+        hit_record.t = root;
+        hit_record.point = ray.at(hit_record.t);
+
+        let outward_normal = (hit_record.point - self.center(ray.time())) / self.radius;
         hit_record.set_face_normal(&ray, &outward_normal);
         hit_record.material = self.material.clone();
 

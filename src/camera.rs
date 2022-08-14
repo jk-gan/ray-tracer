@@ -1,6 +1,6 @@
 use glam::DVec3;
 
-use crate::{random_in_unit_disk, ray::Ray, Point3};
+use crate::{random_f64_range, random_in_unit_disk, ray::Ray, Point3};
 
 pub struct Camera {
     // aspect_ratio: f32,
@@ -69,10 +69,12 @@ impl Camera {
     pub fn get_ray(&self, s: f64, t: f64) -> Ray {
         let rd = self.lens_radius * random_in_unit_disk();
         let offset = self.u * rd.x + self.v * rd.y;
+        let ray_time = random_f64_range(0.0, 1.0);
 
         Ray::new(
             self.origin + offset,
             self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset,
+            ray_time,
         )
     }
 }
