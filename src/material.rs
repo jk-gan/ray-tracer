@@ -73,80 +73,6 @@ impl Material {
     }
 }
 
-// pub struct Lambertian {
-//     albedo: Color,
-// }
-
-// impl Lambertian {
-//     pub fn new(albedo: Color) -> Self {
-//         Self { albedo }
-//     }
-// }
-
-// impl Material for Lambertian {
-//     fn scatter(
-//         &self,
-//         _in_ray: &Ray,
-//         hit_record: &HitRecord,
-//         attenuation: &mut Color,
-//         scattered_ray: &mut Ray,
-//     ) -> bool {
-//     }
-// }
-
-// pub struct Metal {
-//     albedo: Color,
-//     fuzz: f64,
-// }
-
-// impl Metal {
-//     pub fn new(albedo: Color, fuzz: f64) -> Self {
-//         Self { albedo, fuzz }
-//     }
-// }
-
-// impl Material for Metal {
-//     fn scatter(
-//         &self,
-//         in_ray: &Ray,
-//         hit_record: &HitRecord,
-//         attenuation: &mut Color,
-//         scattered_ray: &mut Ray,
-//     ) -> bool {
-//         let reflected = reflect(in_ray.direction().normalize(), hit_record.normal);
-//         *scattered_ray = Ray::new(
-//             hit_record.point,
-//             reflected + self.fuzz * random_in_unit_sphere(),
-//         );
-//         *attenuation = self.albedo;
-
-//         scattered_ray.direction().dot(hit_record.normal) > 0.0
-//     }
-// }
-
-// pub struct Dielectric {
-//     index_of_refraction: f64,
-// }
-
-// impl Dielectric {
-//     pub fn new(index_of_refraction: f64) -> Self {
-//         Self {
-//             index_of_refraction,
-//         }
-//     }
-// }
-
-// impl Material for Dielectric {
-//     fn scatter(
-//         &self,
-//         in_ray: &Ray,
-//         hit_record: &HitRecord,
-//         attenuation: &mut Color,
-//         scattered_ray: &mut Ray,
-//     ) -> bool {
-//     }
-// }
-
 /// Returns true if the vector is close to zero in all dimensions.
 fn near_zero(vector: &DVec3) -> bool {
     let epsilon = 1e-8;
@@ -157,9 +83,6 @@ fn near_zero(vector: &DVec3) -> bool {
 }
 
 fn reflect(v: DVec3, n: DVec3) -> DVec3 {
-    // let v = view.clone();
-    // let n = normal.clone();
-
     v - 2.0 * v.dot(n) * n
 }
 
