@@ -1,8 +1,8 @@
 use crate::{
-    color::Color, hittable::HitRecord, random_f64, random_in_unit_sphere, random_unit_vertor,
-    ray::Ray,
+    color::Color, hittable::HitRecord, random_in_unit_sphere, random_unit_vertor, ray::Ray,
 };
 use glam::DVec3;
+use rand::Rng;
 
 pub enum Material {
     Lambertian { albedo: Color },
@@ -59,8 +59,9 @@ impl Material {
 
                 let cant_refract = refraction_ratio * sin_theta > 1.0;
 
+                let mut rng = rand::thread_rng();
                 let direction = if cant_refract
-                    || schlick_reflectance(cos_theta, refraction_ratio) > random_f64()
+                    || schlick_reflectance(cos_theta, refraction_ratio) > rng.gen()
                 {
                     reflect(unit_direction, hit_record.normal)
                 } else {

@@ -1,4 +1,6 @@
-use crate::{color::Color, material::Material, ray::Ray, DVec3, Point3};
+use crate::{
+    aabb::Aabb, color::Color, interval::Interval, material::Material, ray::Ray, DVec3, Point3,
+};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -34,27 +36,33 @@ impl HitRecord {
 }
 
 pub trait Hittable: Sync + Send {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
+    fn hit(&self, ray: &Ray, ray_t: &Interval) -> Option<HitRecord>;
+
+    fn bounding_box(&self) -> &Aabb;
 }
 
 pub struct Sphere {
     center: Point3,
     radius: f64,
     material: Arc<Material>,
+    bounding_box: Aabb,
 }
 
 impl Sphere {
     pub fn new(center: Point3, radius: f64, material: Arc<Material>) -> Self {
+        let radius_vec = DVec3::new(radius, radius, radius);
+
         Self {
             center,
             radius,
             material,
+            bounding_box: Aabb::from_points(&(center - radius_vec), &(center + radius_vec)),
         }
     }
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: &Interval) -> Option<HitRecord> {
         let oc = ray.origin().clone() - self.center;
         let a = ray.direction().length_squared();
         let half_b = oc.dot(*ray.direction());
@@ -70,9 +78,9 @@ impl Hittable for Sphere {
 
         // find the nearest root that lies in the acceptable range
         let mut root = (-half_b - sqrt_discriminant) / a;
-        if root < t_min || root > t_max {
+        if !ray_t.contains(root) {
             root = (-half_b + sqrt_discriminant) / a;
-            if root < t_min || root > t_max {
+            if !ray_t.contains(root) {
                 return None;
             }
         }
@@ -87,6 +95,10 @@ impl Hittable for Sphere {
 
         Some(hit_record)
     }
+
+    fn bounding_box(&self) -> &Aabb {
+        &self.bounding_box
+    }
 }
 
 pub struct MovingSphere {
@@ -95,16 +107,22 @@ pub struct MovingSphere {
     center_vec: DVec3,
     radius: f64,
     material: Arc<Material>,
+    bounding_box: Aabb,
 }
 
 impl MovingSphere {
     pub fn new(center_0: Point3, center_1: Point3, radius: f64, material: Arc<Material>) -> Self {
+        let radius_vec = DVec3::new(radius, radius, radius);
+        let box_0 = Aabb::from_points(&(center_0 - radius_vec), &(center_0 + radius_vec));
+        let box_1 = Aabb::from_points(&(center_1 - radius_vec), &(center_1 + radius_vec));
+
         Self {
             center_0,
             center_1,
             center_vec: DVec3::from(center_1 - center_0),
             radius,
             material,
+            bounding_box: Aabb::from_aabbs(&box_0, &box_1),
         }
     }
 
@@ -118,7 +136,7 @@ impl MovingSphere {
 }
 
 impl Hittable for MovingSphere {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: &Interval) -> Option<HitRecord> {
         let oc = ray.origin().clone() - self.center(ray.time());
         let a = ray.direction().length_squared();
         let half_b = oc.dot(*ray.direction());
@@ -134,9 +152,9 @@ impl Hittable for MovingSphere {
 
         // find the nearest root that lies in the acceptable range
         let mut root = (-half_b - sqrt_discriminant) / a;
-        if root < t_min || root > t_max {
+        if !ray_t.contains(root) {
             root = (-half_b + sqrt_discriminant) / a;
-            if root < t_min || root > t_max {
+            if !ray_t.contains(root) {
                 return None;
             }
         }
@@ -151,15 +169,27 @@ impl Hittable for MovingSphere {
 
         Some(hit_record)
     }
+
+    fn bounding_box(&self) -> &Aabb {
+        &self.bounding_box
+    }
 }
 
 #[derive(Default)]
 pub struct HittableList {
-    objects: Vec<Arc<Box<dyn Hittable>>>,
+    pub objects: Vec<Arc<Box<dyn Hittable>>>,
+    bounding_box: Aabb,
 }
 
 impl HittableList {
+    pub fn new(object: Box<dyn Hittable>) -> Self {
+        let mut list = Self::default();
+        list.add(object);
+        list
+    }
+
     pub fn add(&mut self, hittable_object: Box<dyn Hittable>) {
+        self.bounding_box = Aabb::from_aabbs(&self.bounding_box, hittable_object.bounding_box());
         self.objects.push(Arc::new(hittable_object));
     }
 
@@ -169,12 +199,12 @@ impl HittableList {
 }
 
 impl Hittable for HittableList {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: &Interval) -> Option<HitRecord> {
         let mut temp_hit_record = None;
-        let mut closest_so_far = t_max;
+        let mut closest_so_far = ray_t.max;
 
         for object in self.objects.iter() {
-            match object.hit(ray, t_min, closest_so_far) {
+            match object.hit(ray, &Interval::new(ray_t.min, closest_so_far)) {
                 Some(hitted_record) => {
                     closest_so_far = hitted_record.t;
                     temp_hit_record = Some(hitted_record);
@@ -184,5 +214,9 @@ impl Hittable for HittableList {
         }
 
         temp_hit_record
+    }
+
+    fn bounding_box(&self) -> &Aabb {
+        &self.bounding_box
     }
 }

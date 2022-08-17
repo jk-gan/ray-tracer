@@ -1,11 +1,11 @@
 use glam::DVec3;
+use rand::Rng;
 use ray_tracer::{
     color::Color,
-    hittable::{MovingSphere, Sphere},
+    hittable::{HittableList, MovingSphere, Sphere},
     material::Material,
-    random_f64, random_f64_range,
     scene::Scene,
-    Point3,
+    Point3, bvh::Bvh,
 };
 use std::sync::Arc;
 
@@ -28,32 +28,35 @@ fn random_scene(scene: &mut Scene) {
     scene.camera.aperture = 0.1;
     scene.camera.focus_dist = 10.0;
 
+    let world = &mut scene.world;
+
     let material_ground = Arc::new(Material::Lambertian {
         albedo: Color::new(0.5, 0.5, 0.5),
     });
-    scene.world.add(Box::new(Sphere::new(
+    world.add(Box::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
         material_ground.clone(),
     )));
 
+    let mut rng = rand::thread_rng();
     for a in -11..11 {
         for b in -11..11 {
-            let choose_material = random_f64();
+            let choose_material = rng.gen::<f64>();
             let center = Point3::new(
-                a as f64 + 0.9 * random_f64(),
+                a as f64 + 0.9 * rng.gen::<f64>(),
                 0.2,
-                b as f64 + 0.9 * random_f64(),
+                b as f64 + 0.9 * rng.gen::<f64>(),
             );
 
             if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_material < 0.8 {
                     // diffuse
-                    let albedo = Color::new(random_f64(), random_f64(), random_f64())
-                        * Color::new(random_f64(), random_f64(), random_f64());
+                    let albedo = Color::new(rng.gen::<f64>(), rng.gen::<f64>(), rng.gen::<f64>())
+                        * Color::new(rng.gen::<f64>(), rng.gen::<f64>(), rng.gen::<f64>());
                     let sphere_material = Arc::new(Material::Lambertian { albedo });
-                    let center_2 = center + DVec3::new(0.0, random_f64_range(0.0, 0.5), 0.0);
-                    scene.world.add(Box::new(MovingSphere::new(
+                    let center_2 = center + DVec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
+                    world.add(Box::new(MovingSphere::new(
                         center,
                         center_2,
                         0.2,
@@ -62,23 +65,19 @@ fn random_scene(scene: &mut Scene) {
                 } else if choose_material < 0.95 {
                     // metal
                     let albedo = Color::new(
-                        random_f64_range(0.5, 1.0),
-                        random_f64_range(0.5, 1.0),
-                        random_f64_range(0.5, 1.0),
+                        rng.gen_range(0.5..1.0),
+                        rng.gen_range(0.5..1.0),
+                        rng.gen_range(0.5..1.0),
                     );
-                    let fuzz = random_f64_range(0.0, 0.5);
+                    let fuzz: f64 = rng.gen_range(0.0..0.5);
                     let sphere_material = Arc::new(Material::Metal { albedo, fuzz });
-                    scene
-                        .world
-                        .add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
+                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
                 } else {
                     // glass
                     let sphere_material = Arc::new(Material::Dielectric {
                         index_of_refraction: 1.5,
                     });
-                    scene
-                        .world
-                        .add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
+                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material.clone())));
                 }
             }
         }
@@ -87,7 +86,7 @@ fn random_scene(scene: &mut Scene) {
     let material_1 = Arc::new(Material::Dielectric {
         index_of_refraction: 1.5,
     });
-    scene.world.add(Box::new(Sphere::new(
+    world.add(Box::new(Sphere::new(
         Point3::new(0.0, 1.0, 0.0),
         1.0,
         material_1.clone(),
@@ -95,7 +94,7 @@ fn random_scene(scene: &mut Scene) {
     let material_2 = Arc::new(Material::Lambertian {
         albedo: Color::new(0.4, 0.2, 0.1),
     });
-    scene.world.add(Box::new(Sphere::new(
+    world.add(Box::new(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
         material_2.clone(),
@@ -104,11 +103,13 @@ fn random_scene(scene: &mut Scene) {
         albedo: Color::new(0.7, 0.6, 0.5),
         fuzz: 0.0,
     });
-    scene.world.add(Box::new(Sphere::new(
+    world.add(Box::new(Sphere::new(
         Point3::new(4.0, 1.0, 0.0),
         1.0,
         material_3.clone(),
     )));
+
+    scene.world = HittableList::new(Box::new(Bvh::from_list(world)));
 }
 
 fn main() {

@@ -2,10 +2,11 @@ use crate::{
     camera::Camera,
     color::{write_color, Color},
     hittable::{Hittable, HittableList},
-    random_f64,
+    interval::Interval,
     ray::Ray,
 };
 use indicatif::ProgressBar;
+use rand::Rng;
 use rayon::prelude::*;
 
 pub struct Scene {
@@ -65,8 +66,11 @@ impl Scene {
                         let mut pixel_color = Color::new(0.0, 0.0, 0.0);
 
                         for _ in 0..self.samples_per_pixel {
-                            let u = (i as f64 + random_f64()) / (self.image_width as f64 - 1.0);
-                            let v = (j as f64 + random_f64()) / (self.image_height as f64 - 1.0);
+                            let mut rng = rand::thread_rng();
+
+                            let u = (i as f64 + rng.gen::<f64>()) / (self.image_width as f64 - 1.0);
+                            let v =
+                                (j as f64 + rng.gen::<f64>()) / (self.image_height as f64 - 1.0);
 
                             let ray = self.camera.get_ray(u, v);
                             pixel_color += ray_color(&ray, &self.world, self.max_depth);
@@ -96,7 +100,7 @@ fn ray_color(ray: &Ray, world: &impl Hittable, depth: usize) -> Color {
         return Color::new(0.0, 0.0, 0.0);
     }
 
-    if let Some(hitted_record) = world.hit(ray, 0.001, f64::INFINITY) {
+    if let Some(hitted_record) = world.hit(ray, &Interval::new(0.001, f64::INFINITY)) {
         let mut scattered_ray = Ray::default();
         let mut attenuation = Color::default();
 
