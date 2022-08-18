@@ -36,17 +36,17 @@ pub struct CheckerTexture {
 }
 
 impl CheckerTexture {
-    pub fn new(inv_scale: f64, even: Arc<dyn Texture>, odd: Arc<dyn Texture>) -> Self {
+    pub fn new(scale: f64, even: Arc<dyn Texture>, odd: Arc<dyn Texture>) -> Self {
         Self {
-            inv_scale,
+            inv_scale: 1.0 / scale,
             even,
             odd,
         }
     }
 
-    pub fn from_colors(inv_scale: f64, color_1: Color, color_2: Color) -> Self {
+    pub fn from_colors(scale: f64, color_1: Color, color_2: Color) -> Self {
         Self {
-            inv_scale,
+            inv_scale: 1.0 / scale,
             even: Arc::new(SolidColor::new(color_1)),
             odd: Arc::new(SolidColor::new(color_2)),
         }
