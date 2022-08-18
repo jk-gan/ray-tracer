@@ -6,6 +6,7 @@ pub mod hittable;
 pub mod interval;
 pub mod material;
 pub mod ray;
+pub mod rt_image;
 pub mod scene;
 pub mod texture;
 

@@ -6,7 +6,7 @@ use ray_tracer::{
     hittable::{HittableList, MovingSphere, Sphere},
     material::Material,
     scene::Scene,
-    texture::{CheckerTexture, SolidColor},
+    texture::{CheckerTexture, ImageTexture, SolidColor},
     Point3,
 };
 use std::sync::Arc;
@@ -17,6 +17,39 @@ const WIDTH: u32 = 1600;
 // const HEIGHT: u32 = (WIDTH as f64 / ASPECT_RATIO) as u32;
 const SAMPLES_PER_PIXEL: usize = 100;
 const MAX_DEPTH: usize = 50;
+
+fn earth(scene: &mut Scene) {
+    scene.set_image_width(800);
+    scene.set_aspect_ratio(16.0 / 9.0);
+    scene.samples_per_pixel = 300;
+
+    scene.camera.aperture = 0.0;
+    scene.camera.vfov = 20.0;
+    scene.camera.look_from = Point3::new(0.0, 0.0, 12.0);
+    scene.camera.look_at = Point3::new(0.0, 0.0, 0.0);
+
+    let world = &mut scene.world;
+
+    let earth_texture = Arc::new(ImageTexture::new(
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("assets/images/earthmap.jpg")
+            .as_path(),
+    ));
+    let earth_surface = Arc::new(Material::Lambertian {
+        albedo: earth_texture.clone(),
+    });
+    let globe = Box::new(Sphere::new(
+        Point3::new(0.0, 0.0, 0.0),
+        2.0,
+        earth_surface.clone(),
+    ));
+    world.add(globe);
+    // auto earth_texture = make_shared<image_texture>("earthmap.jpg");
+    // auto earth_surface = make_shared<lambertian>(earth_texture);
+    // auto globe = make_shared<sphere>(point3(0,0,0), 2, earth_surface);
+
+    // scene_desc.world = hittable_list(globe);
+}
 
 fn two_spheres(scene: &mut Scene) {
     scene.set_image_width(400);
@@ -162,6 +195,7 @@ fn main() {
     scene.camera.vup = DVec3::new(0.0, 1.0, 0.0);
     scene.camera.focus_dist = 10.0;
     // random_scene(&mut scene);
-    two_spheres(&mut scene);
+    // two_spheres(&mut scene);
+    earth(&mut scene);
     scene.render();
 }

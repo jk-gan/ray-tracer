@@ -1,6 +1,5 @@
-use std::sync::Arc;
-
-use crate::{color::Color, Point3};
+use crate::{color::Color, interval::Interval, rt_image::RTImage, Point3};
+use std::{path::Path, sync::Arc};
 
 pub trait Texture: Sync + Send {
     fn value(&self, u: f64, v: f64, point: &Point3) -> Color;
@@ -65,5 +64,40 @@ impl Texture for CheckerTexture {
         } else {
             self.odd.value(u, v, point)
         }
+    }
+}
+
+pub struct ImageTexture {
+    image: RTImage,
+}
+
+impl ImageTexture {
+    pub fn new(path: &Path) -> Self {
+        Self {
+            image: RTImage::new(path),
+        }
+    }
+}
+
+impl Texture for ImageTexture {
+    fn value(&self, u: f64, v: f64, _point: &Point3) -> Color {
+        // Clamp input texture coordinates to [0,1] x [1,0]
+        let u = Interval::new(0.0, 1.0).clamp(u);
+        let v = 1.0 - Interval::new(0.0, 1.0).clamp(v); // Flip V to image coordinates
+
+        let mut i = (u * self.image.width() as f64) as usize;
+        let mut j = (v * self.image.height() as f64) as usize;
+        if i > self.image.width() as usize - 1 {
+            i = self.image.width() as usize - 1
+        }
+        if j > self.image.height() as usize - 1 {
+            j = self.image.height() as usize - 1
+        }
+
+        let index = 3 * i + 3 * self.image.width() as usize * j;
+        let r = self.image.data[index] as f64 / 255.0;
+        let g = self.image.data[index + 1] as f64 / 255.0;
+        let b = self.image.data[index + 2] as f64 / 255.0;
+        Color::new(r, g, b)
     }
 }
