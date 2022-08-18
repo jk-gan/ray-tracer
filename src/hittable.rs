@@ -1,5 +1,6 @@
 use crate::{
-    aabb::Aabb, color::Color, interval::Interval, material::Material, ray::Ray, DVec3, Point3,
+    aabb::Aabb, interval::Interval, material::Material, ray::Ray, texture::SolidColor, DVec3,
+    Point3,
 };
 use std::sync::Arc;
 
@@ -9,6 +10,8 @@ pub struct HitRecord {
     pub normal: DVec3,
     pub material: Arc<Material>,
     pub t: f64,
+    pub u: f64,
+    pub v: f64,
     pub front_face: bool,
 }
 
@@ -27,9 +30,11 @@ impl HitRecord {
             point: (0.0, 0.0, 0.0).into(),
             normal: (0.0, 0.0, 0.0).into(),
             material: Arc::new(Material::Lambertian {
-                albedo: Color::new(0.0, 0.0, 0.0),
+                albedo: Arc::new(SolidColor::from_rgb(0.0, 0.0, 0.0)),
             }),
             t: 0.0,
+            u: 0.0,
+            v: 0.0,
             front_face: false,
         }
     }

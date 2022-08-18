@@ -1,11 +1,13 @@
 use crate::{
     color::Color, hittable::HitRecord, random_in_unit_sphere, random_unit_vertor, ray::Ray,
+    texture::Texture,
 };
 use glam::DVec3;
 use rand::Rng;
+use std::sync::Arc;
 
 pub enum Material {
-    Lambertian { albedo: Color },
+    Lambertian { albedo: Arc<dyn Texture> },
     Metal { albedo: Color, fuzz: f64 },
     Dielectric { index_of_refraction: f64 },
 }
@@ -28,7 +30,7 @@ impl Material {
                 }
 
                 *scattered_ray = Ray::new(hit_record.point, scatter_direction, in_ray.time());
-                *attenuation = *albedo;
+                *attenuation = albedo.value(hit_record.u, hit_record.v, &hit_record.point);
 
                 true
             }

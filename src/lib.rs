@@ -7,6 +7,7 @@ pub mod interval;
 pub mod material;
 pub mod ray;
 pub mod scene;
+pub mod texture;
 
 use glam::DVec3;
 use rand::Rng;

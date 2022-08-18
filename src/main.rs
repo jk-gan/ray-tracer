@@ -1,11 +1,13 @@
 use glam::DVec3;
 use rand::Rng;
 use ray_tracer::{
+    bvh::Bvh,
     color::Color,
     hittable::{HittableList, MovingSphere, Sphere},
     material::Material,
     scene::Scene,
-    Point3, bvh::Bvh,
+    texture::{CheckerTexture, SolidColor},
+    Point3,
 };
 use std::sync::Arc;
 
@@ -30,9 +32,17 @@ fn random_scene(scene: &mut Scene) {
 
     let world = &mut scene.world;
 
+    let checker = Arc::new(CheckerTexture::from_colors(
+        0.32,
+        Color::new(0.2, 0.3, 0.1),
+        Color::new(0.9, 0.9, 0.9),
+    ));
     let material_ground = Arc::new(Material::Lambertian {
-        albedo: Color::new(0.5, 0.5, 0.5),
+        albedo: checker.clone(),
     });
+    // let material_ground = Arc::new(Material::Lambertian {
+    //     albedo: Color::new(0.5, 0.5, 0.5),
+    // });
     world.add(Box::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
@@ -54,7 +64,9 @@ fn random_scene(scene: &mut Scene) {
                     // diffuse
                     let albedo = Color::new(rng.gen::<f64>(), rng.gen::<f64>(), rng.gen::<f64>())
                         * Color::new(rng.gen::<f64>(), rng.gen::<f64>(), rng.gen::<f64>());
-                    let sphere_material = Arc::new(Material::Lambertian { albedo });
+                    let sphere_material = Arc::new(Material::Lambertian {
+                        albedo: Arc::new(SolidColor::new(albedo)),
+                    });
                     let center_2 = center + DVec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
                     world.add(Box::new(MovingSphere::new(
                         center,
@@ -92,7 +104,7 @@ fn random_scene(scene: &mut Scene) {
         material_1.clone(),
     )));
     let material_2 = Arc::new(Material::Lambertian {
-        albedo: Color::new(0.4, 0.2, 0.1),
+        albedo: Arc::new(SolidColor::new(Color::new(0.4, 0.2, 0.1))),
     });
     world.add(Box::new(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
