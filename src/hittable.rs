@@ -1,6 +1,6 @@
 use crate::{
     aabb::Aabb, interval::Interval, material::Material, ray::Ray, texture::SolidColor, DVec3,
-    Point3,
+    Point3, PI,
 };
 use std::sync::Arc;
 
@@ -64,6 +64,22 @@ impl Sphere {
             bounding_box: Aabb::from_points(&(center - radius_vec), &(center + radius_vec)),
         }
     }
+
+    fn get_sphere_uv(point: &Point3) -> (f64, f64) {
+        // p: a given point on the sphere of radius one, centered at the origin.
+        // u: returned value [0,1] of angle around the Y axis from X=-1.
+        // v: returned value [0,1] of angle from Y=-1 to Y=+1.
+        //     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
+        //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
+        //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
+
+        let theta = -point.y.acos();
+        let phi = -point.z.atan2(point.x) + PI;
+
+        let u = phi / (2.0 * PI);
+        let v = theta / PI;
+        (u, v)
+    }
 }
 
 impl Hittable for Sphere {
@@ -96,6 +112,11 @@ impl Hittable for Sphere {
 
         let outward_normal = (hit_record.point - self.center) / self.radius;
         hit_record.set_face_normal(&ray, &outward_normal);
+
+        let (u, v) = Self::get_sphere_uv(&outward_normal);
+        hit_record.u = u;
+        hit_record.v = v;
+
         hit_record.material = self.material.clone();
 
         Some(hit_record)

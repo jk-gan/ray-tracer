@@ -18,6 +18,38 @@ const WIDTH: u32 = 1600;
 const SAMPLES_PER_PIXEL: usize = 100;
 const MAX_DEPTH: usize = 50;
 
+fn two_spheres(scene: &mut Scene) {
+    scene.set_image_width(400);
+    scene.set_aspect_ratio(16.0 / 9.0);
+    scene.samples_per_pixel = 100;
+
+    scene.camera.aperture = 0.0;
+    scene.camera.vfov = 20.0;
+    scene.camera.look_from = Point3::new(13.0, 2.0, 3.0);
+    scene.camera.look_at = Point3::new(0.0, 0.0, 0.0);
+
+    let world = &mut scene.world;
+
+    let checker = Arc::new(CheckerTexture::from_colors(
+        0.8,
+        Color::new(0.2, 0.3, 0.1),
+        Color::new(0.9, 0.9, 0.9),
+    ));
+    let material_checker = Arc::new(Material::Lambertian {
+        albedo: checker.clone(),
+    });
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, -10.0, 0.0),
+        10.0,
+        material_checker.clone(),
+    )));
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, 10.0, 0.0),
+        10.0,
+        material_checker.clone(),
+    )));
+}
+
 fn random_scene(scene: &mut Scene) {
     scene.set_aspect_ratio(16.0 / 9.0);
     scene.set_image_width(1000);
@@ -126,6 +158,10 @@ fn random_scene(scene: &mut Scene) {
 
 fn main() {
     let mut scene = Scene::new(ASPECT_RATIO, WIDTH, SAMPLES_PER_PIXEL, MAX_DEPTH);
-    random_scene(&mut scene);
+
+    scene.camera.vup = DVec3::new(0.0, 1.0, 0.0);
+    scene.camera.focus_dist = 10.0;
+    // random_scene(&mut scene);
+    two_spheres(&mut scene);
     scene.render();
 }
