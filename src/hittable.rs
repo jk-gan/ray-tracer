@@ -246,3 +246,91 @@ impl Hittable for HittableList {
         &self.bounding_box
     }
 }
+
+pub struct Quad {
+    q: Point3,
+    u: DVec3,
+    v: DVec3,
+    material: Arc<Material>,
+    bounding_box: Aabb,
+    normal: DVec3,
+    d: f64,
+    w: DVec3,
+}
+
+impl Quad {
+    pub fn new(q: Point3, u: DVec3, v: DVec3, material: Arc<Material>) -> Self {
+        let n = u.cross(v);
+        let normal = n.normalize();
+        let d = normal.dot(q);
+        let w = n / n.dot(n);
+
+        let mut quad = Self {
+            q,
+            u,
+            v,
+            material,
+            bounding_box: Aabb::default(),
+            normal,
+            d,
+            w,
+        };
+        quad.set_bounding_box();
+        quad
+    }
+
+    fn set_bounding_box(&mut self) {
+        self.bounding_box = Aabb::from_points(&self.q, &(self.q + self.u + self.v));
+    }
+
+    fn is_interior(a: f64, b: f64) -> bool {
+        // Given the hit point in plane coordinates, return false if it is outside the primitive,
+        // otherwise return true
+
+        !((a < 0.0) || (1.0 < a) || (b < 0.0) || (1.0 < b))
+    }
+}
+
+impl Hittable for Quad {
+    fn hit(&self, ray: &Ray, ray_t: &Interval) -> Option<HitRecord> {
+        let denom = self.normal.dot(*ray.direction());
+
+        // No hit if the ray is parallel to the plane
+        if denom.abs() < 1e-8 {
+            return None;
+        }
+
+        // Return None if the hit point parameter t is outside the ray interval
+        let t = (self.d - self.normal.dot(*ray.origin())) / denom;
+        if !ray_t.contains(t) {
+            return None;
+        }
+
+        let mut hit_record = HitRecord::empty();
+
+        // Determine the hit point lies within the planar shape using its plane coordinates
+        let intersection = ray.at(t);
+        let planar_hit_point = intersection - self.q;
+        let alpha = self.w.dot(planar_hit_point.cross(self.v));
+        let beta = self.w.dot(self.u.cross(planar_hit_point));
+
+        if Self::is_interior(alpha, beta) {
+            hit_record.u = alpha;
+            hit_record.v = beta;
+        } else {
+            return None;
+        }
+
+        // Ray hits the 2D shape; set the rest of the hit record and return it
+        hit_record.t = t;
+        hit_record.point = intersection;
+        hit_record.material = self.material.clone();
+        hit_record.set_face_normal(ray, &self.normal);
+
+        Some(hit_record)
+    }
+
+    fn bounding_box(&self) -> &Aabb {
+        &self.bounding_box
+    }
+}

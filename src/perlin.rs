@@ -1,6 +1,6 @@
 use crate::Point3;
 use glam::DVec3;
-use rand::{distributions::weighted, Rng};
+use rand::Rng;
 
 pub struct Perlin {
     random_vec: Vec<DVec3>,
@@ -25,6 +25,7 @@ impl Perlin {
                 )
                 .normalize(),
             );
+            // random_vec.push(random_in_unit_sphere());
         }
 
         let perm_x = Self::perlin_generate_perm();
@@ -44,9 +45,9 @@ impl Perlin {
         let v = point.y - point.y.floor();
         let w = point.z - point.z.floor();
 
-        let i = (point.x).floor() as usize;
-        let j = (point.y).floor() as usize;
-        let k = (point.z).floor() as usize;
+        let i = point.x.floor() as usize;
+        let j = point.y.floor() as usize;
+        let k = point.z.floor() as usize;
         let mut c = [[[DVec3::new(0.0, 0.0, 0.0); 2]; 2]; 2];
 
         for di in 0..2 {
@@ -54,7 +55,7 @@ impl Perlin {
                 for dk in 0..2 {
                     c[di][dj][dk] = self.random_vec[self.perm_x[(i + di) & 255]
                         ^ self.perm_y[(j + dj) & 255]
-                        ^ self.perm_z[(k + dk) & 255]]
+                        ^ self.perm_z[(k + dk) & 255]];
                 }
             }
         }
