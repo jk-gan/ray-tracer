@@ -5,6 +5,7 @@ pub mod color;
 pub mod hittable;
 pub mod interval;
 pub mod material;
+pub mod perlin;
 pub mod ray;
 pub mod rt_image;
 pub mod scene;
@@ -13,8 +14,6 @@ pub mod texture;
 use glam::DVec3;
 use rand::Rng;
 pub type Point3 = DVec3;
-
-pub const PI: f64 = 3.1415926535897932385;
 
 #[inline]
 pub fn random_dvec3() -> DVec3 {

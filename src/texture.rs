@@ -1,4 +1,4 @@
-use crate::{color::Color, interval::Interval, rt_image::RTImage, Point3};
+use crate::{color::Color, interval::Interval, perlin::Perlin, rt_image::RTImage, Point3};
 use std::{path::Path, sync::Arc};
 
 pub trait Texture: Sync + Send {
@@ -99,5 +99,27 @@ impl Texture for ImageTexture {
         let g = self.image.data[index + 1] as f64 / 255.0;
         let b = self.image.data[index + 2] as f64 / 255.0;
         Color::new(r, g, b)
+    }
+}
+
+pub struct NoiseTexture {
+    noise: Perlin,
+    scale: f64,
+}
+
+impl NoiseTexture {
+    pub fn new(scale: f64) -> Self {
+        Self {
+            noise: Perlin::new(),
+            scale,
+        }
+    }
+}
+
+impl Texture for NoiseTexture {
+    fn value(&self, _u: f64, _v: f64, point: &Point3) -> Color {
+        // Color::new(1.0, 1.0, 1.0)
+        let s = self.scale * *point;
+        Color::new(1.0, 1.0, 1.0) * 0.5 * (1.0 + (s.z + 10.0 * self.noise.turb(&s, 7)).sin())
     }
 }

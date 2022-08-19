@@ -1,6 +1,6 @@
 use crate::{
     aabb::Aabb, interval::Interval, material::Material, ray::Ray, texture::SolidColor, DVec3,
-    Point3, PI,
+    Point3,
 };
 use std::sync::Arc;
 
