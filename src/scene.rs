@@ -17,6 +17,7 @@ pub struct Scene {
     image_height: u32,
     pub samples_per_pixel: usize,
     pub max_depth: usize,
+    pub background_color: Color,
 }
 
 impl Scene {
@@ -34,6 +35,7 @@ impl Scene {
             image_height: (image_width as f64 / aspect_ratio) as u32,
             samples_per_pixel,
             max_depth,
+            background_color: Color::new(0.0, 0.0, 0.0),
         }
     }
 
@@ -73,7 +75,7 @@ impl Scene {
                                 (j as f64 + rng.gen::<f64>()) / (self.image_height as f64 - 1.0);
 
                             let ray = self.camera.get_ray(u, v);
-                            pixel_color += ray_color(&ray, &self.world, self.max_depth);
+                            pixel_color += self.ray_color(&ray, self.max_depth);
                         }
                         progress_bar.inc(1);
                         pixel_color
@@ -88,36 +90,48 @@ impl Scene {
             }
         }
     }
+
+    fn ray_color(&self, ray: &Ray, depth: usize) -> Color {
+        // if we've exceeded the ray bounce limit, no more light is gathered.
+        if depth <= 0 {
+            return Color::new(0.0, 0.0, 0.0);
+        }
+
+        // if the ray hits noting, return the background_color
+        if let Some(hitted_record) = self.world.hit(ray, &Interval::new(0.001, f64::INFINITY)) {
+            let mut scattered_ray = Ray::default();
+            let mut attenuation = Color::default();
+            let color_from_emission = hitted_record.material.emitted(
+                hitted_record.u,
+                hitted_record.v,
+                &hitted_record.point,
+            );
+
+            if hitted_record.material.scatter(
+                ray,
+                &hitted_record,
+                &mut attenuation,
+                &mut scattered_ray,
+            ) {
+                let color_from_scatter = attenuation * self.ray_color(&scattered_ray, depth - 1);
+
+                return color_from_emission + color_from_scatter;
+            } else {
+                return color_from_emission;
+            }
+        } else {
+            return self.background_color;
+        }
+
+        // let unit_direction = ray.direction().normalize();
+        // let t = 0.5 * (unit_direction.y + 1.0);
+
+        // // lerp
+        // // blended_value = (1 - t) * start_value + t * end_value
+        // (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+    }
 }
 
 fn calculate_image_height(image_width: u32, aspect_ratio: f64) -> u32 {
     (image_width as f64 / aspect_ratio) as u32
-}
-
-fn ray_color(ray: &Ray, world: &impl Hittable, depth: usize) -> Color {
-    // if we've exceeded the ray bounce limit, no more light is gathered.
-    if depth <= 0 {
-        return Color::new(0.0, 0.0, 0.0);
-    }
-
-    if let Some(hitted_record) = world.hit(ray, &Interval::new(0.001, f64::INFINITY)) {
-        let mut scattered_ray = Ray::default();
-        let mut attenuation = Color::default();
-
-        if hitted_record
-            .material
-            .scatter(ray, &hitted_record, &mut attenuation, &mut scattered_ray)
-        {
-            return attenuation * ray_color(&scattered_ray, world, depth - 1);
-        }
-
-        return Color::new(0.0, 0.0, 0.0);
-    }
-
-    let unit_direction = ray.direction().normalize();
-    let t = 0.5 * (unit_direction.y + 1.0);
-
-    // lerp
-    // blended_value = (1 - t) * start_value + t * end_value
-    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
 }

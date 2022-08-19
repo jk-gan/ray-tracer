@@ -18,6 +18,116 @@ const WIDTH: u32 = 1600;
 const SAMPLES_PER_PIXEL: usize = 100;
 const MAX_DEPTH: usize = 50;
 
+fn cornell_box(scene: &mut Scene) {
+    scene.set_image_width(600);
+    scene.set_aspect_ratio(1.0);
+    scene.samples_per_pixel = 500;
+    scene.background_color = Color::new(0.0, 0.0, 0.0);
+
+    scene.camera.aperture = 0.0;
+    scene.camera.vfov = 40.0;
+    scene.camera.look_from = Point3::new(278.0, 278.0, -800.0);
+    scene.camera.look_at = Point3::new(278.0, 278.0, 0.0);
+
+    let world = &mut scene.world;
+
+    // Materials
+    let red = Arc::new(Material::Lambertian {
+        albedo: Arc::new(SolidColor::new(Color::new(0.65, 0.05, 0.05))),
+    });
+    let white = Arc::new(Material::Lambertian {
+        albedo: Arc::new(SolidColor::new(Color::new(0.73, 0.73, 0.73))),
+    });
+    let green = Arc::new(Material::Lambertian {
+        albedo: Arc::new(SolidColor::new(Color::new(0.12, 0.45, 0.15))),
+    });
+    let light = Arc::new(Material::DiffuseLight {
+        emit: Arc::new(SolidColor::new(Color::new(15.0, 15.0, 15.0))),
+    });
+
+    // Quads
+    world.add(Box::new(Quad::new(
+        Point3::new(555.0, 0.0, 0.0),
+        DVec3::new(0.0, 555.0, 0.0),
+        DVec3::new(0.0, 4.0, 555.0),
+        green.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(0.0, 0.0, 0.0),
+        DVec3::new(0.0, 555.0, 0.0),
+        DVec3::new(0.0, 0.0, 555.0),
+        red.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(343.0, 554.0, 332.0),
+        DVec3::new(-130.0, 0.0, 0.0),
+        DVec3::new(0.0, 0.0, -105.0),
+        light.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(0.0, 0.0, 0.0),
+        DVec3::new(555.0, 0.0, 0.0),
+        DVec3::new(0.0, 0.0, 555.0),
+        white.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(555.0, 555.0, 555.0),
+        DVec3::new(-555.0, 0.0, 0.0),
+        DVec3::new(0.0, 0.0, -555.0),
+        white.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(0.0, 0.0, 555.0),
+        DVec3::new(555.0, 0.0, 0.0),
+        DVec3::new(0.0, 555.0, 0.0),
+        white.clone(),
+    )));
+}
+
+fn simple_light(scene: &mut Scene) {
+    scene.set_image_width(400);
+    scene.set_aspect_ratio(16.0 / 9.0);
+    scene.samples_per_pixel = 100;
+    scene.background_color = Color::new(0.0, 0.0, 0.0);
+
+    scene.camera.aperture = 0.0;
+    scene.camera.vfov = 20.0;
+    scene.camera.look_from = Point3::new(26.0, 3.0, 6.0);
+    scene.camera.look_at = Point3::new(0.0, 2.0, 0.0);
+
+    let world = &mut scene.world;
+
+    let perlin_texture = Arc::new(NoiseTexture::new(4.0));
+    let perlin_material = Arc::new(Material::Lambertian {
+        albedo: perlin_texture.clone(),
+    });
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        perlin_material.clone(),
+    )));
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, 2.0, 0.0),
+        2.0,
+        perlin_material.clone(),
+    )));
+
+    let diffuse_light = Arc::new(Material::DiffuseLight {
+        emit: Arc::new(SolidColor::new(Color::new(4.0, 4.0, 4.0))),
+    });
+    world.add(Box::new(Sphere::new(
+        Point3::new(0.0, 7.0, 0.0),
+        2.0,
+        diffuse_light.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(3.0, 1.0, -2.0),
+        DVec3::new(2.0, 0.0, 0.0),
+        DVec3::new(0.0, 2.0, 0.0),
+        diffuse_light.clone(),
+    )));
+}
+
 fn quads(scene: &mut Scene) {
     scene.set_image_width(400);
     scene.set_aspect_ratio(1.0);
@@ -277,13 +387,16 @@ fn random_scene(scene: &mut Scene) {
 fn main() {
     let mut scene = Scene::new(ASPECT_RATIO, WIDTH, SAMPLES_PER_PIXEL, MAX_DEPTH);
 
-    // scene.camera.vup = DVec3::new(0.0, 1.0, 0.0);
-    // scene.camera.focus_dist = 10.0;
+    scene.background_color = Color::new(0.7, 0.8, 1.0);
+    scene.camera.vup = DVec3::new(0.0, 1.0, 0.0);
+    scene.camera.focus_dist = 10.0;
 
     // random_scene(&mut scene);
     // two_spheres(&mut scene);
     // earth(&mut scene);
     // two_perlin_spheres(&mut scene);
-    quads(&mut scene);
+    // quads(&mut scene);
+    // simple_light(&mut scene);
+    cornell_box(&mut scene);
     scene.render();
 }

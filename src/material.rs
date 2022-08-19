@@ -1,6 +1,6 @@
 use crate::{
     color::Color, hittable::HitRecord, random_in_unit_sphere, random_unit_vertor, ray::Ray,
-    texture::Texture,
+    texture::Texture, Point3,
 };
 use glam::DVec3;
 use rand::Rng;
@@ -10,9 +10,17 @@ pub enum Material {
     Lambertian { albedo: Arc<dyn Texture> },
     Metal { albedo: Color, fuzz: f64 },
     Dielectric { index_of_refraction: f64 },
+    DiffuseLight { emit: Arc<dyn Texture> },
 }
 
 impl Material {
+    pub fn emitted(&self, u: f64, v: f64, point: &Point3) -> Color {
+        match self {
+            Material::DiffuseLight { emit } => emit.value(u, v, point),
+            _ => Color::new(0.0, 0.0, 0.0),
+        }
+    }
+
     pub fn scatter(
         &self,
         in_ray: &Ray,
@@ -73,6 +81,7 @@ impl Material {
                 *scattered_ray = Ray::new(hit_record.point, direction, in_ray.time());
                 true
             }
+            Material::DiffuseLight { emit: _emit } => false,
         }
     }
 }
