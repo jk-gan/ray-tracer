@@ -1,9 +1,11 @@
 use crate::{interval::Interval, ray::Ray, Point3};
+use glam::DVec3;
+use std::ops::Add;
 
 pub struct Aabb {
-    x: Interval,
-    y: Interval,
-    z: Interval,
+    pub x: Interval,
+    pub y: Interval,
+    pub z: Interval,
 }
 
 impl Aabb {
@@ -97,5 +99,21 @@ impl Default for Aabb {
             y: Interval::default(),
             z: Interval::default(),
         }
+    }
+}
+
+impl Add<&DVec3> for &Aabb {
+    type Output = Aabb;
+
+    fn add(self, offset: &DVec3) -> Self::Output {
+        Aabb::new(&self.x + offset.x, &self.y + offset.y, &self.z + offset.z)
+    }
+}
+
+impl Add<&Aabb> for &DVec3 {
+    type Output = Aabb;
+
+    fn add(self, bounding_box: &Aabb) -> Self::Output {
+        bounding_box + self
     }
 }

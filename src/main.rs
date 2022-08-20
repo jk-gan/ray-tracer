@@ -3,7 +3,7 @@ use rand::Rng;
 use ray_tracer::{
     bvh::Bvh,
     color::Color,
-    hittable::{HittableList, MovingSphere, Quad, Sphere},
+    hittable::{create_box, HittableList, MovingSphere, Quad, Sphere, RotationY, Translate},
     material::Material,
     scene::Scene,
     texture::{CheckerTexture, ImageTexture, NoiseTexture, SolidColor},
@@ -21,7 +21,7 @@ const MAX_DEPTH: usize = 50;
 fn cornell_box(scene: &mut Scene) {
     scene.set_image_width(600);
     scene.set_aspect_ratio(1.0);
-    scene.samples_per_pixel = 500;
+    scene.samples_per_pixel = 1000;
     scene.background_color = Color::new(0.0, 0.0, 0.0);
 
     scene.camera.aperture = 0.0;
@@ -82,6 +82,26 @@ fn cornell_box(scene: &mut Scene) {
         DVec3::new(0.0, 555.0, 0.0),
         white.clone(),
     )));
+
+    // Boxes
+    let box_1 = Arc::new(create_box(
+        &Point3::new(0.0, 0.0, 0.0),
+        &Point3::new(165.0, 330.0, 165.0),
+        white.clone(),
+    ));
+    let rotated_box_1 = Arc::new(RotationY::new(box_1.clone(), 15.0));
+    let translated_box_1 = Translate::new(rotated_box_1.clone(), &DVec3::new(265.0, 0.0, 295.0));
+    world.add(Box::new(translated_box_1));
+
+    let box_2 = Arc::new(create_box(
+        &Point3::new(0.0, 0.0, 0.0),
+        &Point3::new(165.0, 165.0, 165.0),
+        white.clone(),
+    ));
+    let rotated_box_2 = Arc::new(RotationY::new(box_2.clone(), -18.0));
+    let translated_box_2 = Translate::new(rotated_box_2.clone(), &DVec3::new(130.0, 0.0, 65.0));
+    world.add(Box::new(translated_box_2));
+
 }
 
 fn simple_light(scene: &mut Scene) {

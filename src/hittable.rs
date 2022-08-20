@@ -334,3 +334,189 @@ impl Hittable for Quad {
         &self.bounding_box
     }
 }
+
+pub fn create_box(a: &Point3, b: &Point3, material: Arc<Material>) -> HittableList {
+    // returns the 3D box (six sides) that contains the two opposite vertices a & b
+    let mut sides = HittableList::default();
+
+    // Construct the two opposite vertices with the minimum and maximum coordinates
+    let min = Point3::new(f64::min(a.x, b.x), f64::min(a.y, b.y), f64::min(a.z, b.z));
+    let max = Point3::new(f64::max(a.x, b.x), f64::max(a.y, b.y), f64::max(a.z, b.z));
+
+    let dx = DVec3::new(max.x - min.x, 0.0, 0.0);
+    let dy = DVec3::new(0.0, max.y - min.y, 0.0);
+    let dz = DVec3::new(0.0, 0.0, max.z - min.z);
+
+    // front
+    sides.add(Box::new(Quad::new(
+        Point3::new(min.x, min.y, max.z),
+        dx,
+        dy,
+        material.clone(),
+    )));
+    // right
+    sides.add(Box::new(Quad::new(
+        Point3::new(min.x, min.y, max.z),
+        -dz,
+        dy,
+        material.clone(),
+    )));
+    // back
+    sides.add(Box::new(Quad::new(
+        Point3::new(max.x, min.y, min.z),
+        -dx,
+        dy,
+        material.clone(),
+    )));
+    // left
+    sides.add(Box::new(Quad::new(
+        Point3::new(min.x, min.y, min.z),
+        dz,
+        dy,
+        material.clone(),
+    )));
+    // top
+    sides.add(Box::new(Quad::new(
+        Point3::new(min.x, max.y, max.z),
+        dx,
+        -dz,
+        material.clone(),
+    )));
+    // bottom
+    sides.add(Box::new(Quad::new(
+        Point3::new(min.x, min.y, min.z),
+        dx,
+        dz,
+        material.clone(),
+    )));
+
+    sides
+}
+
+pub struct Translate {
+    object: Arc<dyn Hittable>,
+    offset: DVec3,
+    bounding_box: Aabb,
+}
+
+impl Translate {
+    pub fn new(object: Arc<dyn Hittable>, displacement: &DVec3) -> Self {
+        let bounding_box = object.bounding_box() + displacement;
+        Self {
+            object,
+            offset: *displacement,
+            bounding_box,
+        }
+    }
+}
+
+impl Hittable for Translate {
+    fn hit(&self, ray: &Ray, ray_t: &Interval) -> Option<HitRecord> {
+        // Move the ray backwards by the offset
+        let offset_ray = Ray::new(*ray.origin() - self.offset, *ray.direction(), ray.time());
+
+        // Determine where (if any) an intersection occurs along the offset_ray
+        if let Some(mut hitted_record) = self.object.hit(&offset_ray, ray_t) {
+            hitted_record.point += self.offset;
+            return Some(hitted_record);
+        } else {
+            return None;
+        }
+    }
+
+    fn bounding_box(&self) -> &Aabb {
+        &self.bounding_box
+    }
+}
+
+pub struct RotationY {
+    object: Arc<dyn Hittable>,
+    sin_theta: f64,
+    cos_theta: f64,
+    bounding_box: Aabb,
+}
+
+impl RotationY {
+    pub fn new(object: Arc<dyn Hittable>, angle_in_degrees: f64) -> Self {
+        let angle_in_radians = angle_in_degrees.to_radians();
+        let sin_theta = angle_in_radians.sin();
+        let cos_theta = angle_in_radians.cos();
+        let bounding_box = object.bounding_box();
+
+        let mut min = Point3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY);
+        let mut max = Point3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY);
+
+        for i in 0..2 {
+            for j in 0..2 {
+                for k in 0..2 {
+                    let x = i as f64 * bounding_box.x.max + (1 - i) as f64 * bounding_box.x.min;
+                    let y = j as f64 * bounding_box.y.max + (1 - j) as f64 * bounding_box.y.min;
+                    let z = k as f64 * bounding_box.z.max + (1 - k) as f64 * bounding_box.z.min;
+
+                    let new_x = cos_theta * x + sin_theta * z;
+                    let new_z = -sin_theta * x + cos_theta * z;
+
+                    let tester = DVec3::new(new_x, y, new_z);
+
+                    for c in 0..3 {
+                        min[c] = f64::min(min[c], tester[c]);
+                        max[c] = f64::max(max[c], tester[c]);
+                    }
+                }
+            }
+        }
+
+        let bounding_box = Aabb::from_points(&min, &max);
+
+        Self {
+            object,
+            sin_theta,
+            cos_theta,
+            bounding_box,
+        }
+    }
+}
+
+impl Hittable for RotationY {
+    fn hit(&self, ray: &Ray, ray_t: &Interval) -> Option<HitRecord> {
+        // Change the ray from world space to object space
+        let mut origin = ray.origin().clone();
+        let mut direction = ray.direction().clone();
+
+        origin[0] = self.cos_theta * ray.origin()[0] - self.sin_theta * ray.origin()[2];
+        origin[2] = self.sin_theta * ray.origin()[0] + self.cos_theta * ray.origin()[2];
+
+        direction[0] = self.cos_theta * ray.direction()[0] - self.sin_theta * ray.direction()[2];
+        direction[2] = self.sin_theta * ray.direction()[0] + self.cos_theta * ray.direction()[2];
+
+        let rotated_ray = Ray::new(origin, direction, ray.time());
+
+        // Determine where (if any) an intersection occurs in object space
+        if let Some(mut hitted_record) = self.object.hit(&rotated_ray, ray_t) {
+            // Change the intersection point from object space to world space
+            let mut point = hitted_record.point.clone();
+            point[0] =
+                self.cos_theta * hitted_record.point[0] + self.sin_theta * hitted_record.point[2];
+            point[2] =
+                -self.sin_theta * hitted_record.point[0] + self.cos_theta * hitted_record.point[2];
+
+            // Change the normal from object space to world space
+            let mut normal = hitted_record.normal.clone();
+            normal[0] =
+                self.cos_theta * hitted_record.normal[0] + self.sin_theta * hitted_record.normal[2];
+            normal[2] = -self.sin_theta * hitted_record.normal[0]
+                + self.cos_theta * hitted_record.normal[2];
+
+            hitted_record.point = point;
+            hitted_record.normal = normal;
+
+            return Some(hitted_record);
+        } else {
+            return None;
+        }
+    }
+
+    fn bounding_box(&self) -> &Aabb {
+        &self.bounding_box
+    }
+}
