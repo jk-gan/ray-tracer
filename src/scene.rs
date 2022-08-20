@@ -98,7 +98,7 @@ impl Scene {
         }
 
         // if the ray hits noting, return the background_color
-        if let Some(hitted_record) = self.world.hit(ray, &Interval::new(0.001, f64::INFINITY)) {
+        if let Some(hitted_record) = self.world.hit(ray, &Interval::new(0.001, f64::MAX)) {
             let mut scattered_ray = Ray::default();
             let mut attenuation = Color::default();
             let color_from_emission = hitted_record.material.emitted(

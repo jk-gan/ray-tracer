@@ -7,14 +7,14 @@ pub struct Interval {
 }
 
 impl Interval {
-    const EMPTY: Self = Self {
-        min: f64::INFINITY,
-        max: -f64::INFINITY,
+    pub const EMPTY: Self = Self {
+        min: f64::MAX,
+        max: -f64::MAX,
     };
 
-    const UNIVERSE: Self = Self {
-        min: -f64::INFINITY,
-        max: f64::INFINITY,
+    pub const UNIVERSE: Self = Self {
+        min: -f64::MAX,
+        max: f64::MAX,
     };
 
     pub fn new(min: f64, max: f64) -> Self {
@@ -56,8 +56,8 @@ impl Interval {
 impl Default for Interval {
     fn default() -> Self {
         Self {
-            min: f64::INFINITY,
-            max: -f64::INFINITY,
+            min: f64::MAX,
+            max: -f64::MAX,
         }
     }
 }

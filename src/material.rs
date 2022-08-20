@@ -11,6 +11,7 @@ pub enum Material {
     Metal { albedo: Color, fuzz: f64 },
     Dielectric { index_of_refraction: f64 },
     DiffuseLight { emit: Arc<dyn Texture> },
+    Isotropic { albedo: Arc<dyn Texture> },
 }
 
 impl Material {
@@ -82,6 +83,12 @@ impl Material {
                 true
             }
             Material::DiffuseLight { emit: _emit } => false,
+            Material::Isotropic { albedo } => {
+                *scattered_ray = Ray::new(hit_record.point, random_unit_vertor(), in_ray.time());
+                *attenuation = albedo.value(hit_record.u, hit_record.v, &hit_record.point);
+
+                true
+            }
         }
     }
 }

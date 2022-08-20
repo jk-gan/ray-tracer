@@ -3,7 +3,8 @@ use rand::Rng;
 use ray_tracer::{
     bvh::Bvh,
     color::Color,
-    hittable::{create_box, HittableList, MovingSphere, Quad, Sphere, RotationY, Translate},
+    constant_medium::ConstantMedium,
+    hittable::{create_box, HittableList, MovingSphere, Quad, RotationY, Sphere, Translate},
     material::Material,
     scene::Scene,
     texture::{CheckerTexture, ImageTexture, NoiseTexture, SolidColor},
@@ -18,10 +19,105 @@ const WIDTH: u32 = 1600;
 const SAMPLES_PER_PIXEL: usize = 100;
 const MAX_DEPTH: usize = 50;
 
+fn cornell_smoke(scene: &mut Scene) {
+    scene.set_image_width(600);
+    scene.set_aspect_ratio(1.0);
+    scene.samples_per_pixel = 50;
+    scene.background_color = Color::new(0.0, 0.0, 0.0);
+
+    scene.camera.aperture = 0.0;
+    scene.camera.vfov = 40.0;
+    scene.camera.look_from = Point3::new(278.0, 278.0, -800.0);
+    scene.camera.look_at = Point3::new(278.0, 278.0, 0.0);
+
+    let world = &mut scene.world;
+
+    // Materials
+    let red = Arc::new(Material::Lambertian {
+        albedo: Arc::new(SolidColor::new(Color::new(0.65, 0.05, 0.05))),
+    });
+    let white = Arc::new(Material::Lambertian {
+        albedo: Arc::new(SolidColor::new(Color::new(0.73, 0.73, 0.73))),
+    });
+    let green = Arc::new(Material::Lambertian {
+        albedo: Arc::new(SolidColor::new(Color::new(0.12, 0.45, 0.15))),
+    });
+    let light = Arc::new(Material::DiffuseLight {
+        emit: Arc::new(SolidColor::new(Color::new(7.0, 7.0, 7.0))),
+    });
+
+    // Quads
+    world.add(Box::new(Quad::new(
+        Point3::new(555.0, 0.0, 0.0),
+        DVec3::new(0.0, 555.0, 0.0),
+        DVec3::new(0.0, 0.0, 555.0),
+        green.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(0.0, 0.0, 0.0),
+        DVec3::new(0.0, 555.0, 0.0),
+        DVec3::new(0.0, 0.0, 555.0),
+        red.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(113.0, 554.0, 127.0),
+        DVec3::new(330.0, 0.0, 0.0),
+        DVec3::new(0.0, 0.0, 305.0),
+        light.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(0.0, 555.0, 0.0),
+        DVec3::new(555.0, 0.0, 0.0),
+        DVec3::new(0.0, 0.0, 555.0),
+        white.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(0.0, 0.0, 0.0),
+        DVec3::new(555.0, 0.0, 0.0),
+        DVec3::new(0.0, 0.0, 555.0),
+        white.clone(),
+    )));
+    world.add(Box::new(Quad::new(
+        Point3::new(0.0, 0.0, 555.0),
+        DVec3::new(555.0, 0.0, 0.0),
+        DVec3::new(0.0, 555.0, 0.0),
+        white.clone(),
+    )));
+
+    // Boxes
+    let box_1 = Arc::new(create_box(
+        &Point3::new(0.0, 0.0, 0.0),
+        &Point3::new(165.0, 330.0, 165.0),
+        white.clone(),
+    ));
+    let rotated_box_1 = Arc::new(RotationY::new(box_1.clone(), 15.0));
+    let translated_box_1 = Translate::new(rotated_box_1.clone(), &DVec3::new(265.0, 0.0, 295.0));
+    // world.add(Box::new(translated_box_1));
+
+    let box_2 = Arc::new(create_box(
+        &Point3::new(0.0, 0.0, 0.0),
+        &Point3::new(165.0, 165.0, 165.0),
+        white.clone(),
+    ));
+    let rotated_box_2 = Arc::new(RotationY::new(box_2.clone(), -18.0));
+    let translated_box_2 = Translate::new(rotated_box_2.clone(), &DVec3::new(130.0, 0.0, 65.0));
+
+    world.add(Box::new(ConstantMedium::from_color(
+        Arc::new(translated_box_1),
+        0.01,
+        Color::new(0.0, 0.0, 0.0),
+    )));
+    world.add(Box::new(ConstantMedium::from_color(
+        Arc::new(translated_box_2),
+        0.01,
+        Color::new(1.0, 1.0, 1.0),
+    )));
+}
+
 fn cornell_box(scene: &mut Scene) {
     scene.set_image_width(600);
     scene.set_aspect_ratio(1.0);
-    scene.samples_per_pixel = 1000;
+    scene.samples_per_pixel = 10000;
     scene.background_color = Color::new(0.0, 0.0, 0.0);
 
     scene.camera.aperture = 0.0;
@@ -49,7 +145,7 @@ fn cornell_box(scene: &mut Scene) {
     world.add(Box::new(Quad::new(
         Point3::new(555.0, 0.0, 0.0),
         DVec3::new(0.0, 555.0, 0.0),
-        DVec3::new(0.0, 4.0, 555.0),
+        DVec3::new(0.0, 0.0, 555.0),
         green.clone(),
     )));
     world.add(Box::new(Quad::new(
@@ -93,15 +189,21 @@ fn cornell_box(scene: &mut Scene) {
     let translated_box_1 = Translate::new(rotated_box_1.clone(), &DVec3::new(265.0, 0.0, 295.0));
     world.add(Box::new(translated_box_1));
 
-    let box_2 = Arc::new(create_box(
-        &Point3::new(0.0, 0.0, 0.0),
-        &Point3::new(165.0, 165.0, 165.0),
-        white.clone(),
-    ));
-    let rotated_box_2 = Arc::new(RotationY::new(box_2.clone(), -18.0));
-    let translated_box_2 = Translate::new(rotated_box_2.clone(), &DVec3::new(130.0, 0.0, 65.0));
-    world.add(Box::new(translated_box_2));
-
+    // let box_2 = Arc::new(create_box(
+    //     &Point3::new(0.0, 0.0, 0.0),
+    //     &Point3::new(165.0, 165.0, 165.0),
+    //     white.clone(),
+    // ));
+    // let rotated_box_2 = Arc::new(RotationY::new(box_2.clone(), -18.0));
+    // let translated_box_2 = Translate::new(rotated_box_2.clone(), &DVec3::new(130.0, 0.0, 65.0));
+    // world.add(Box::new(translated_box_2));
+    world.add(Box::new(Sphere::new(
+        Point3::new(160.0, 100.0, 145.0),
+        100.0,
+        Arc::new(Material::Dielectric {
+            index_of_refraction: 1.5,
+        }),
+    )));
 }
 
 fn simple_light(scene: &mut Scene) {
@@ -418,5 +520,6 @@ fn main() {
     // quads(&mut scene);
     // simple_light(&mut scene);
     cornell_box(&mut scene);
+    // cornell_smoke(&mut scene);
     scene.render();
 }

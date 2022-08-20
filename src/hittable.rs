@@ -443,8 +443,8 @@ impl RotationY {
         let cos_theta = angle_in_radians.cos();
         let bounding_box = object.bounding_box();
 
-        let mut min = Point3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY);
-        let mut max = Point3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY);
+        let mut min = Point3::new(f64::MAX, f64::MAX, f64::MAX);
+        let mut max = Point3::new(-f64::MAX, -f64::MAX, -f64::MAX);
 
         for i in 0..2 {
             for j in 0..2 {
