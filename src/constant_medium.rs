@@ -43,15 +43,15 @@ impl ConstantMedium {
 impl Hittable for ConstantMedium {
     fn hit(
         &self,
-        ray: &crate::ray::Ray,
-        ray_t: &crate::interval::Interval,
+        ray: crate::ray::Ray,
+        ray_t: crate::interval::Interval,
     ) -> Option<crate::hittable::HitRecord> {
         // Print occasional samples when debugging. To enable, set enable_debug true
         let mut rng = rand::thread_rng();
         let enable_debug = false;
         let debugging = enable_debug && rng.gen::<f64>() < 0.00001;
 
-        let mut hit_record_1 = match self.boundary.hit(ray, &Interval::UNIVERSE) {
+        let mut hit_record_1 = match self.boundary.hit(ray, Interval::UNIVERSE) {
             Some(hitted_record) => hitted_record,
             None => {
                 return None;
@@ -60,7 +60,7 @@ impl Hittable for ConstantMedium {
 
         let mut hit_record_2 = match self
             .boundary
-            .hit(ray, &Interval::new(hit_record_1.t + 0.0001, f64::MAX))
+            .hit(ray, Interval::new(hit_record_1.t + 0.0001, f64::MAX))
         {
             Some(hitted_record) => hitted_record,
             None => {

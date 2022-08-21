@@ -26,9 +26,7 @@ impl Material {
         &self,
         in_ray: &Ray,
         hit_record: &HitRecord,
-        attenuation: &mut Color,
-        scattered_ray: &mut Ray,
-    ) -> bool {
+    ) -> Option<(Color, Ray)> {
         match self {
             Material::Lambertian { albedo } => {
                 let mut scatter_direction = hit_record.normal + random_unit_vertor();
@@ -38,26 +36,30 @@ impl Material {
                     scatter_direction = hit_record.normal;
                 }
 
-                *scattered_ray = Ray::new(hit_record.point, scatter_direction, in_ray.time());
-                *attenuation = albedo.value(hit_record.u, hit_record.v, &hit_record.point);
+                let scattered_ray = Ray::new(hit_record.point, scatter_direction, in_ray.time());
+                let attenuation = albedo.value(hit_record.u, hit_record.v, &hit_record.point);
 
-                true
+                Some((attenuation, scattered_ray))
             }
             Material::Metal { albedo, fuzz } => {
                 let reflected = reflect(in_ray.direction().normalize(), hit_record.normal);
-                *scattered_ray = Ray::new(
+                let scattered_ray = Ray::new(
                     hit_record.point,
-                    reflected + *fuzz * random_in_unit_sphere(),
+                    reflected + fuzz.clone() * random_in_unit_sphere(),
                     in_ray.time(),
                 );
-                *attenuation = *albedo;
+                let attenuation = albedo.clone();
 
-                scattered_ray.direction().dot(hit_record.normal) > 0.0
+                if scattered_ray.direction().dot(hit_record.normal) > 0.0 {
+                    Some((attenuation, scattered_ray))
+                } else {
+                    None
+                }
             }
             Material::Dielectric {
                 index_of_refraction,
             } => {
-                *attenuation = Color::new(1.0, 1.0, 1.0);
+                let attenuation = Color::new(1.0, 1.0, 1.0);
                 let refraction_ratio = if hit_record.front_face {
                     1.0 / index_of_refraction
                 } else {
@@ -79,15 +81,15 @@ impl Material {
                     refract(unit_direction, hit_record.normal, refraction_ratio)
                 };
 
-                *scattered_ray = Ray::new(hit_record.point, direction, in_ray.time());
-                true
+                let scattered_ray = Ray::new(hit_record.point, direction, in_ray.time());
+                Some((attenuation, scattered_ray))
             }
-            Material::DiffuseLight { emit: _emit } => false,
+            Material::DiffuseLight { emit: _emit } => None,
             Material::Isotropic { albedo } => {
-                *scattered_ray = Ray::new(hit_record.point, random_unit_vertor(), in_ray.time());
-                *attenuation = albedo.value(hit_record.u, hit_record.v, &hit_record.point);
+                let scattered_ray = Ray::new(hit_record.point, random_unit_vertor(), in_ray.time());
+                let attenuation = albedo.value(hit_record.u, hit_record.v, &hit_record.point);
 
-                true
+                Some((attenuation, scattered_ray))
             }
         }
     }

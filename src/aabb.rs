@@ -2,6 +2,7 @@ use crate::{interval::Interval, ray::Ray, Point3};
 use glam::DVec3;
 use std::ops::Add;
 
+#[derive(Clone)]
 pub struct Aabb {
     pub x: Interval,
     pub y: Interval,
@@ -59,7 +60,7 @@ impl Aabb {
         }
     }
 
-    pub fn hit(&self, ray: &Ray, ray_t: &Interval) -> bool {
+    pub fn hit(&self, ray: Ray, ray_t: Interval) -> bool {
         for a in 0..3 {
             // let t0 = f64::min(
             //     (self.axis(a).min - ray.origin()[a]) / ray.direction()[a],

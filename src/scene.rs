@@ -64,6 +64,7 @@ impl Scene {
             .rev()
             .map(|j| {
                 (0..self.image_width)
+                    .into_par_iter()
                     .map(|i| {
                         let mut pixel_color = Color::new(0.0, 0.0, 0.0);
 
@@ -75,7 +76,7 @@ impl Scene {
                                 (j as f64 + rng.gen::<f64>()) / (self.image_height as f64 - 1.0);
 
                             let ray = self.camera.get_ray(u, v);
-                            pixel_color += self.ray_color(&ray, self.max_depth);
+                            pixel_color += self.ray_color(ray, self.max_depth);
                         }
                         progress_bar.inc(1);
                         pixel_color
@@ -91,29 +92,27 @@ impl Scene {
         }
     }
 
-    fn ray_color(&self, ray: &Ray, depth: usize) -> Color {
+    fn ray_color(&self, ray: Ray, depth: usize) -> Color {
         // if we've exceeded the ray bounce limit, no more light is gathered.
         if depth <= 0 {
             return Color::new(0.0, 0.0, 0.0);
         }
 
         // if the ray hits noting, return the background_color
-        if let Some(hitted_record) = self.world.hit(ray, &Interval::new(0.001, f64::MAX)) {
-            let mut scattered_ray = Ray::default();
-            let mut attenuation = Color::default();
+        if let Some(hitted_record) = self.world.hit(ray, Interval::new(0.001, f64::MAX)) {
+            // let mut scattered_ray = Ray::default();
+            // let mut attenuation = Color::default();
             let color_from_emission = hitted_record.material.emitted(
                 hitted_record.u,
                 hitted_record.v,
                 &hitted_record.point,
             );
 
-            if hitted_record.material.scatter(
-                ray,
+            if let Some((attenuation, scattered_ray)) = hitted_record.material.scatter(
+                &ray,
                 &hitted_record,
-                &mut attenuation,
-                &mut scattered_ray,
             ) {
-                let color_from_scatter = attenuation * self.ray_color(&scattered_ray, depth - 1);
+                let color_from_scatter = attenuation * self.ray_color(scattered_ray, depth - 1);
 
                 return color_from_emission + color_from_scatter;
             } else {

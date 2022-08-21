@@ -68,18 +68,19 @@ impl Perlin {
     }
 
     fn noise(&self, p: &DVec3) -> f64 {
-        let u = p.x - f64::floor(p.x);
-        let v = p.y - f64::floor(p.y);
-        let w = p.z - f64::floor(p.z);
-        let i = f64::floor(p.x) as usize;
-        let j = f64::floor(p.y) as usize;
-        let k = f64::floor(p.z) as usize;
+        let u = p.x - p.x.floor();
+        let v = p.y - p.y.floor();
+        let w = p.z - p.z.floor();
+
+        let i = p.x.floor() as i32;
+        let j = p.y.floor() as i32;
+        let k = p.z.floor() as i32;
         let mut c = [[[DVec3::new(0.0, 0.0, 0.0); 2]; 2]; 2];
         for di in 0..2 {
             for dj in 0..2 {
                 for dk in 0..2 {
                     c[di][dj][dk] =
-                        self.ran_vec[self.perm_x[(i + di) & 255] ^ self.perm_y[(j + dj) & 255] ^ self.perm_z[(k + dk) & 255]]
+                        self.ran_vec[self.perm_x[((i + di as i32) & 255) as usize] ^ self.perm_y[((j + dj as i32) & 255) as usize] ^ self.perm_z[((k + dk as i32) & 255) as usize]]
                 }
             }
         };

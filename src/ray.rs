@@ -1,7 +1,7 @@
 use crate::Point3;
 use glam::DVec3;
 
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct Ray {
     origin: Point3,
     direction: DVec3,

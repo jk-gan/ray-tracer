@@ -14,20 +14,20 @@ enum BBoxCompareAxis {
 }
 
 pub struct Bvh {
-    left: Arc<Box<dyn Hittable>>,
-    right: Arc<Box<dyn Hittable>>,
+    left: Arc<dyn Hittable>,
+    right: Arc<dyn Hittable>,
     bounding_box: Aabb,
 }
 
 impl Hittable for Bvh {
-    fn hit(&self, ray: &Ray, ray_t: &Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: Ray, ray_t: Interval) -> Option<HitRecord> {
         if self.bounding_box().hit(ray, ray_t) {
             let hit_left = self.left.hit(ray, ray_t);
             let hit_right = match hit_left {
                 Some(ref hit_record) => {
-                    self.right.hit(ray, &Interval::new(ray_t.min, hit_record.t))
+                    self.right.hit(ray, Interval::new(ray_t.min, hit_record.t))
                 }
-                None => self.right.hit(ray, &Interval::new(ray_t.min, ray_t.max)),
+                None => self.right.hit(ray, Interval::new(ray_t.min, ray_t.max)),
             };
             if hit_right.is_some() {
                 hit_right
@@ -45,7 +45,7 @@ impl Hittable for Bvh {
 }
 
 impl Bvh {
-    pub fn new(source_objects: &Vec<Arc<Box<dyn Hittable>>>, start: usize, end: usize) -> Self {
+    pub fn new(source_objects: &Vec<Arc<dyn Hittable>>, start: usize, end: usize) -> Self {
         let mut rng = rand::thread_rng();
         let axis = rng.gen_range(0..=2);
 
@@ -57,7 +57,7 @@ impl Bvh {
             _ => BBoxCompareAxis::Z,
         };
 
-        let (left, right): (Arc<Box<dyn Hittable>>, Arc<Box<dyn Hittable>>) = match end - start {
+        let (left, right): (Arc<dyn Hittable>, Arc<dyn Hittable>) = match end - start {
             1 => {
                 let left = objects[start].clone();
                 let right = objects[start].clone();
@@ -81,8 +81,8 @@ impl Bvh {
                 // let right = Arc::new(Box::new(Self::new(source_objects, mid, end)));
                 // (left, right)
                 (
-                    Arc::new(Box::new(Self::new(&objects, start, mid))),
-                    Arc::new(Box::new(Self::new(&objects, mid, end))),
+                    Arc::new(Self::new(&objects, start, mid)),
+                    Arc::new(Self::new(&objects, mid, end)),
                 )
             }
         };
@@ -98,11 +98,7 @@ impl Bvh {
         Self::new(&list.objects, 0, list.objects.len())
     }
 
-    fn box_compare(
-        a: Arc<Box<dyn Hittable>>,
-        b: Arc<Box<dyn Hittable>>,
-        axis: BBoxCompareAxis,
-    ) -> bool {
+    fn box_compare(a: Arc<dyn Hittable>, b: Arc<dyn Hittable>, axis: BBoxCompareAxis) -> bool {
         let axis_index = match axis {
             BBoxCompareAxis::X => 0,
             BBoxCompareAxis::Y => 1,
@@ -114,7 +110,7 @@ impl Bvh {
 
     fn box_compare_a(
         axis: BBoxCompareAxis,
-    ) -> impl FnMut(&Arc<Box<dyn Hittable>>, &Arc<Box<dyn Hittable>>) -> Ordering {
+    ) -> impl FnMut(&Arc<dyn Hittable>, &Arc<dyn Hittable>) -> Ordering {
         let axis_index = match axis {
             BBoxCompareAxis::X => 0,
             BBoxCompareAxis::Y => 1,

@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Interval {
     pub min: f64,
     pub max: f64,
