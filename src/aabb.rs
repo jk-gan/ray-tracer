@@ -60,7 +60,7 @@ impl Aabb {
         }
     }
 
-    pub fn hit(&self, ray: Ray, ray_t: Interval) -> bool {
+    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> bool {
         for a in 0..3 {
             // let t0 = f64::min(
             //     (self.axis(a).min - ray.origin()[a]) / ray.direction()[a],
@@ -75,9 +75,9 @@ impl Aabb {
             // ray_t.min = f64::max(t0, ray_t.min);
             // ray_t.max = f64::min(t1, ray_t.max);
 
-            let inv_d = 1.0 / ray.direction()[a];
-            let mut t0 = (self.axis(a).min - ray.origin()[a]) * inv_d;
-            let mut t1 = (self.axis(a).max - ray.origin()[a]) * inv_d;
+            let inv_d = 1.0 / ray.direction[a];
+            let mut t0 = (self.axis(a).min - ray.origin[a]) * inv_d;
+            let mut t1 = (self.axis(a).max - ray.origin[a]) * inv_d;
             if inv_d < 0.0 {
                 std::mem::swap(&mut t0, &mut t1);
             }

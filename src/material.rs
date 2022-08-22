@@ -1,9 +1,8 @@
 use crate::{
-    color::Color, hittable::HitRecord, random_in_unit_sphere, random_unit_vertor, ray::Ray,
-    texture::Texture, Point3,
+    color::Color, hittable::HitRecord, random_f64, random_in_unit_sphere, random_unit_vertor,
+    ray::Ray, texture::Texture, Point3,
 };
 use glam::DVec3;
-use rand::Rng;
 use std::sync::Arc;
 
 pub enum Material {
@@ -22,11 +21,7 @@ impl Material {
         }
     }
 
-    pub fn scatter(
-        &self,
-        in_ray: &Ray,
-        hit_record: &HitRecord,
-    ) -> Option<(Color, Ray)> {
+    pub fn scatter(&self, in_ray: &Ray, hit_record: &HitRecord) -> Option<(Color, Ray)> {
         match self {
             Material::Lambertian { albedo } => {
                 let mut scatter_direction = hit_record.normal + random_unit_vertor();
@@ -36,21 +31,21 @@ impl Material {
                     scatter_direction = hit_record.normal;
                 }
 
-                let scattered_ray = Ray::new(hit_record.point, scatter_direction, in_ray.time());
+                let scattered_ray = Ray::new(hit_record.point, scatter_direction, in_ray.time);
                 let attenuation = albedo.value(hit_record.u, hit_record.v, &hit_record.point);
 
                 Some((attenuation, scattered_ray))
             }
             Material::Metal { albedo, fuzz } => {
-                let reflected = reflect(in_ray.direction().normalize(), hit_record.normal);
+                let reflected = reflect(in_ray.direction.normalize(), hit_record.normal);
                 let scattered_ray = Ray::new(
                     hit_record.point,
-                    reflected + fuzz.clone() * random_in_unit_sphere(),
-                    in_ray.time(),
+                    reflected + *fuzz * random_in_unit_sphere(),
+                    in_ray.time,
                 );
                 let attenuation = albedo.clone();
 
-                if scattered_ray.direction().dot(hit_record.normal) > 0.0 {
+                if scattered_ray.direction.dot(hit_record.normal) > 0.0 {
                     Some((attenuation, scattered_ray))
                 } else {
                     None
@@ -65,28 +60,27 @@ impl Material {
                 } else {
                     *index_of_refraction
                 };
-                let unit_direction = in_ray.direction().normalize();
+                let unit_direction = in_ray.direction.normalize();
 
                 let cos_theta = f64::min(-unit_direction.dot(hit_record.normal), 1.0);
                 let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
                 let cant_refract = refraction_ratio * sin_theta > 1.0;
 
-                let mut rng = rand::thread_rng();
                 let direction = if cant_refract
-                    || schlick_reflectance(cos_theta, refraction_ratio) > rng.gen()
+                    || schlick_reflectance(cos_theta, refraction_ratio) > random_f64()
                 {
                     reflect(unit_direction, hit_record.normal)
                 } else {
                     refract(unit_direction, hit_record.normal, refraction_ratio)
                 };
 
-                let scattered_ray = Ray::new(hit_record.point, direction, in_ray.time());
+                let scattered_ray = Ray::new(hit_record.point, direction, in_ray.time);
                 Some((attenuation, scattered_ray))
             }
             Material::DiffuseLight { emit: _emit } => None,
             Material::Isotropic { albedo } => {
-                let scattered_ray = Ray::new(hit_record.point, random_unit_vertor(), in_ray.time());
+                let scattered_ray = Ray::new(hit_record.point, random_unit_vertor(), in_ray.time);
                 let attenuation = albedo.value(hit_record.u, hit_record.v, &hit_record.point);
 
                 Some((attenuation, scattered_ray))

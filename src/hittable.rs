@@ -16,8 +16,8 @@ pub struct HitRecord {
 }
 
 impl HitRecord {
-    pub fn face_normal(&mut self, ray: Ray, outward_normal: DVec3) -> (bool, DVec3) {
-        let front_face = ray.direction().dot(outward_normal) < 0.0;
+    pub fn face_normal(&mut self, ray: &Ray, outward_normal: DVec3) -> (bool, DVec3) {
+        let front_face = ray.direction.dot(outward_normal) < 0.0;
         let normal = if front_face {
             outward_normal
         } else {
@@ -43,7 +43,7 @@ impl HitRecord {
 }
 
 pub trait Hittable: Sync + Send {
-    fn hit(&self, ray: Ray, ray_t: Interval) -> Option<HitRecord>;
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord>;
 
     fn bounding_box(&self) -> &Aabb;
 }
@@ -86,10 +86,10 @@ impl Sphere {
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: Ray, ray_t: Interval) -> Option<HitRecord> {
-        let oc = ray.origin().clone() - self.center;
-        let a = ray.direction().length_squared();
-        let half_b = oc.dot(ray.direction().clone());
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+        let oc = ray.origin - self.center;
+        let a = ray.direction.length_squared();
+        let half_b = oc.dot(ray.direction);
         let c = oc.length_squared() - self.radius * self.radius;
 
         let discriminant = half_b * half_b - a * c;
@@ -167,10 +167,10 @@ impl MovingSphere {
 }
 
 impl Hittable for MovingSphere {
-    fn hit(&self, ray: Ray, ray_t: Interval) -> Option<HitRecord> {
-        let oc = ray.origin().clone() - self.center(ray.time());
-        let a = ray.direction().length_squared();
-        let half_b = oc.dot(ray.direction().clone());
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+        let oc = ray.origin - self.center(ray.time);
+        let a = ray.direction.length_squared();
+        let half_b = oc.dot(ray.direction);
         let c = oc.length_squared() - self.radius * self.radius;
 
         let discriminant = half_b * half_b - a * c;
@@ -194,7 +194,7 @@ impl Hittable for MovingSphere {
         hit_record.t = root;
         hit_record.point = ray.at(hit_record.t);
 
-        let outward_normal = (hit_record.point - self.center(ray.time())) / self.radius;
+        let outward_normal = (hit_record.point - self.center(ray.time)) / self.radius;
         let (front_face, normal) = hit_record.face_normal(ray, outward_normal);
         hit_record.normal = normal;
         hit_record.front_face = front_face;
@@ -222,8 +222,8 @@ impl HittableList {
     }
 
     pub fn add(&mut self, hittable_object: Arc<dyn Hittable>) {
+        self.objects.push(hittable_object.clone());
         self.bounding_box = Aabb::from_aabbs(&self.bounding_box, hittable_object.bounding_box());
-        self.objects.push(hittable_object);
     }
 
     pub fn clear(&mut self) {
@@ -232,12 +232,12 @@ impl HittableList {
 }
 
 impl Hittable for HittableList {
-    fn hit(&self, ray: Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         let mut temp_hit_record = None;
         let mut closest_so_far = ray_t.max;
 
         for object in self.objects.iter() {
-            match object.hit(ray, Interval::new(ray_t.min, closest_so_far)) {
+            match object.hit(&ray, Interval::new(ray_t.min, closest_so_far)) {
                 Some(hitted_record) => {
                     closest_so_far = hitted_record.t;
                     temp_hit_record = Some(hitted_record);
@@ -299,8 +299,8 @@ impl Quad {
 }
 
 impl Hittable for Quad {
-    fn hit(&self, ray: Ray, ray_t: Interval) -> Option<HitRecord> {
-        let denom = self.normal.dot(ray.direction().clone());
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+        let denom = self.normal.dot(ray.direction);
 
         // No hit if the ray is parallel to the plane
         if denom.abs() < 1e-8 {
@@ -308,7 +308,7 @@ impl Hittable for Quad {
         }
 
         // Return None if the hit point parameter t is outside the ray interval
-        let t = (self.d - self.normal.dot(*ray.origin())) / denom;
+        let t = (self.d - self.normal.dot(ray.origin)) / denom;
         if !ray_t.contains(t) {
             return None;
         }
@@ -332,7 +332,7 @@ impl Hittable for Quad {
         hit_record.t = t;
         hit_record.point = intersection;
         hit_record.material = self.material.clone();
-        let (front_face, normal) = hit_record.face_normal(ray, self.normal.clone());
+        let (front_face, normal) = hit_record.face_normal(ray, self.normal);
         hit_record.normal = normal;
         hit_record.front_face = front_face;
 
@@ -413,19 +413,19 @@ impl Translate {
         let bounding_box = object.bounding_box() + displacement;
         Self {
             object,
-            offset: displacement.clone(),
+            offset: *displacement,
             bounding_box,
         }
     }
 }
 
 impl Hittable for Translate {
-    fn hit(&self, ray: Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         // Move the ray backwards by the offset
-        let offset_ray = Ray::new(ray.origin().clone() - self.offset, ray.direction().clone(), ray.time());
+        let offset_ray = Ray::new(ray.origin - self.offset, ray.direction, ray.time);
 
         // Determine where (if any) an intersection occurs along the offset_ray
-        if let Some(mut hitted_record) = self.object.hit(offset_ray, ray_t) {
+        if let Some(mut hitted_record) = self.object.hit(&offset_ray, ray_t) {
             hitted_record.point += self.offset;
             return Some(hitted_record);
         } else {
@@ -487,30 +487,30 @@ impl RotationY {
 }
 
 impl Hittable for RotationY {
-    fn hit(&self, ray: Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         // Change the ray from world space to object space
-        let mut origin = ray.origin().clone();
-        let mut direction = ray.direction().clone();
+        let mut origin = ray.origin;
+        let mut direction = ray.direction;
 
-        origin[0] = self.cos_theta * ray.origin()[0] - self.sin_theta * ray.origin()[2];
-        origin[2] = self.sin_theta * ray.origin()[0] + self.cos_theta * ray.origin()[2];
+        origin[0] = self.cos_theta * ray.origin[0] - self.sin_theta * ray.origin[2];
+        origin[2] = self.sin_theta * ray.origin[0] + self.cos_theta * ray.origin[2];
 
-        direction[0] = self.cos_theta * ray.direction()[0] - self.sin_theta * ray.direction()[2];
-        direction[2] = self.sin_theta * ray.direction()[0] + self.cos_theta * ray.direction()[2];
+        direction[0] = self.cos_theta * ray.direction[0] - self.sin_theta * ray.direction[2];
+        direction[2] = self.sin_theta * ray.direction[0] + self.cos_theta * ray.direction[2];
 
-        let rotated_ray = Ray::new(origin, direction, ray.time());
+        let rotated_ray = Ray::new(origin, direction, ray.time);
 
         // Determine where (if any) an intersection occurs in object space
-        if let Some(mut hitted_record) = self.object.hit(rotated_ray, ray_t) {
+        if let Some(mut hitted_record) = self.object.hit(&rotated_ray, ray_t) {
             // Change the intersection point from object space to world space
-            let mut point = hitted_record.point.clone();
+            let mut point = hitted_record.point;
             point[0] =
                 self.cos_theta * hitted_record.point[0] + self.sin_theta * hitted_record.point[2];
             point[2] =
                 -self.sin_theta * hitted_record.point[0] + self.cos_theta * hitted_record.point[2];
 
             // Change the normal from object space to world space
-            let mut normal = hitted_record.normal.clone();
+            let mut normal = hitted_record.normal;
             normal[0] =
                 self.cos_theta * hitted_record.normal[0] + self.sin_theta * hitted_record.normal[2];
             normal[2] = -self.sin_theta * hitted_record.normal[0]

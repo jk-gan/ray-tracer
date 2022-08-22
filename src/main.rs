@@ -1,11 +1,11 @@
 use glam::DVec3;
-use rand::Rng;
 use ray_tracer::{
     bvh::Bvh,
     color::Color,
     constant_medium::ConstantMedium,
     hittable::{create_box, HittableList, MovingSphere, Quad, RotationY, Sphere, Translate},
     material::Material,
+    random_f64, random_f64_range,
     scene::Scene,
     texture::{CheckerTexture, ImageTexture, NoiseTexture, SolidColor},
     Point3,
@@ -20,9 +20,9 @@ const SAMPLES_PER_PIXEL: usize = 100;
 const MAX_DEPTH: usize = 50;
 
 fn final_scene(scene: &mut Scene) {
-    scene.set_image_width(700);
+    scene.set_image_width(600);
     scene.set_aspect_ratio(1.0);
-    scene.samples_per_pixel = 2500;
+    scene.samples_per_pixel = 3000;
     scene.background_color = Color::new(0.0, 0.0, 0.0);
 
     scene.camera.aperture = 0.0;
@@ -35,8 +35,6 @@ fn final_scene(scene: &mut Scene) {
         albedo: Arc::new(SolidColor::new(Color::new(0.48, 0.84, 0.53))),
     });
 
-    let mut rng = rand::thread_rng();
-
     let boxes_per_side = 20;
     for i in 0..boxes_per_side {
         for j in 0..boxes_per_side {
@@ -45,7 +43,7 @@ fn final_scene(scene: &mut Scene) {
             let z0 = -1000.0 + j as f64 * w;
             let y0 = 0.0;
             let x1 = x0 + w;
-            let y1 = rng.gen_range(1.0..101.0);
+            let y1 = random_f64_range(1.0, 101.0);
             let z1 = z0 + w;
 
             boxes_1.add(Arc::new(create_box(
@@ -153,12 +151,12 @@ fn final_scene(scene: &mut Scene) {
         albedo: Arc::new(SolidColor::new(Color::new(0.73, 0.73, 0.73))),
     });
     let ns = 1000;
-    for j in 0..ns {
+    for _ in 0..ns {
         boxes_2.add(Arc::new(Sphere::new(
             Point3::new(
-                rng.gen_range(0.0..165.0),
-                rng.gen_range(0.0..165.0),
-                rng.gen_range(0.0..165.0),
+                random_f64_range(0.0, 165.0),
+                random_f64_range(0.0, 165.0),
+                random_f64_range(0.0, 165.0),
             ),
             10.0,
             white.clone(),
@@ -553,8 +551,9 @@ fn two_spheres(scene: &mut Scene) {
 }
 
 fn random_scene(scene: &mut Scene) {
-    scene.set_aspect_ratio(16.0 / 9.0);
-    scene.set_image_width(400);
+    // scene.set_aspect_ratio(16.0 / 9.0);
+    scene.set_aspect_ratio(1.0);
+    scene.set_image_width(300);
     scene.samples_per_pixel = 100;
 
     scene.camera.look_from = Point3::new(13.0, 2.0, 3.0);
@@ -583,39 +582,39 @@ fn random_scene(scene: &mut Scene) {
         material_ground.clone(),
     )));
 
-    let mut rng = rand::thread_rng();
     for a in -11..11 {
         for b in -11..11 {
-            let choose_material = rng.gen::<f64>();
+            let choose_material = random_f64();
             let center = Point3::new(
-                a as f64 + 0.9 * rng.gen::<f64>(),
+                a as f64 + 0.9 * random_f64(),
                 0.2,
-                b as f64 + 0.9 * rng.gen::<f64>(),
+                b as f64 + 0.9 * random_f64(),
             );
 
             if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_material < 0.8 {
                     // diffuse
-                    let albedo = Color::new(rng.gen::<f64>(), rng.gen::<f64>(), rng.gen::<f64>())
-                        * Color::new(rng.gen::<f64>(), rng.gen::<f64>(), rng.gen::<f64>());
+                    let albedo = Color::new(random_f64(), random_f64(), random_f64())
+                        * Color::new(random_f64(), random_f64(), random_f64());
                     let sphere_material = Arc::new(Material::Lambertian {
                         albedo: Arc::new(SolidColor::new(albedo)),
                     });
-                    let center_2 = center + DVec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
-                    world.add(Arc::new(MovingSphere::new(
-                        center,
-                        center_2,
-                        0.2,
-                        sphere_material.clone(),
-                    )));
+                    let center_2 = center + DVec3::new(0.0, random_f64_range(0.0, 0.5), 0.0);
+                    // world.add(Arc::new(MovingSphere::new(
+                    //     center,
+                    //     center_2,
+                    //     0.2,
+                    //     sphere_material.clone(),
+                    // )));
+                    world.add(Arc::new(Sphere::new(center, 0.2, sphere_material.clone())));
                 } else if choose_material < 0.95 {
                     // metal
                     let albedo = Color::new(
-                        rng.gen_range(0.5..1.0),
-                        rng.gen_range(0.5..1.0),
-                        rng.gen_range(0.5..1.0),
+                        random_f64_range(0.5, 1.0),
+                        random_f64_range(0.5, 1.0),
+                        random_f64_range(0.5, 1.0),
                     );
-                    let fuzz: f64 = rng.gen_range(0.0..0.5);
+                    let fuzz = random_f64_range(0.0, 0.5);
                     let sphere_material = Arc::new(Material::Metal { albedo, fuzz });
                     world.add(Arc::new(Sphere::new(center, 0.2, sphere_material.clone())));
                 } else {
@@ -677,5 +676,6 @@ fn main() {
     // scene.set_image_width(400);
     // scene.samples_per_pixel = 100;
     // scene.max_depth = 4;
+
     scene.render();
 }

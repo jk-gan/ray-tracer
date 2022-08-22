@@ -1,11 +1,11 @@
 use glam::DVec3;
-use rand::Rng;
 
 use crate::{
     color::Color,
     hittable::{HitRecord, Hittable},
     interval::Interval,
     material::Material,
+    random_f64,
     texture::{SolidColor, Texture},
 };
 use std::sync::Arc;
@@ -43,15 +43,14 @@ impl ConstantMedium {
 impl Hittable for ConstantMedium {
     fn hit(
         &self,
-        ray: crate::ray::Ray,
+        ray: &crate::ray::Ray,
         ray_t: crate::interval::Interval,
     ) -> Option<crate::hittable::HitRecord> {
         // Print occasional samples when debugging. To enable, set enable_debug true
-        let mut rng = rand::thread_rng();
         let enable_debug = false;
-        let debugging = enable_debug && rng.gen::<f64>() < 0.00001;
+        let debugging = enable_debug && random_f64() < 0.00001;
 
-        let mut hit_record_1 = match self.boundary.hit(ray, Interval::UNIVERSE) {
+        let mut hit_record_1 = match self.boundary.hit(&ray, Interval::UNIVERSE) {
             Some(hitted_record) => hitted_record,
             None => {
                 return None;
@@ -60,7 +59,7 @@ impl Hittable for ConstantMedium {
 
         let mut hit_record_2 = match self
             .boundary
-            .hit(ray, Interval::new(hit_record_1.t + 0.0001, f64::MAX))
+            .hit(&ray, Interval::new(hit_record_1.t + 0.0001, f64::MAX))
         {
             Some(hitted_record) => hitted_record,
             None => {
@@ -90,9 +89,9 @@ impl Hittable for ConstantMedium {
             hit_record_1.t = 0.0;
         }
 
-        let ray_length = ray.direction().length();
+        let ray_length = ray.direction.length();
         let distance_inside_boundary = (hit_record_2.t - hit_record_1.t) * ray_length;
-        let hit_distance = self.neg_inv_density * rng.gen::<f64>().ln();
+        let hit_distance = self.neg_inv_density * random_f64().ln();
 
         if hit_distance > distance_inside_boundary {
             return None;

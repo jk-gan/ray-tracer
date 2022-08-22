@@ -2,9 +2,9 @@ use crate::{
     aabb::Aabb,
     hittable::{HitRecord, Hittable, HittableList},
     interval::Interval,
+    random_isize_range,
     ray::Ray,
 };
-use rand::Rng;
 use std::{cmp::Ordering, sync::Arc};
 
 enum BBoxCompareAxis {
@@ -20,13 +20,11 @@ pub struct Bvh {
 }
 
 impl Hittable for Bvh {
-    fn hit(&self, ray: Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         if self.bounding_box().hit(ray, ray_t) {
-            let hit_left = self.left.hit(ray, ray_t);
+            let hit_left = self.left.hit(&ray, ray_t);
             let hit_right = match hit_left {
-                Some(ref hit_record) => {
-                    self.right.hit(ray, Interval::new(ray_t.min, hit_record.t))
-                }
+                Some(ref hit_record) => self.right.hit(ray, Interval::new(ray_t.min, hit_record.t)),
                 None => self.right.hit(ray, Interval::new(ray_t.min, ray_t.max)),
             };
             if hit_right.is_some() {
@@ -46,8 +44,7 @@ impl Hittable for Bvh {
 
 impl Bvh {
     pub fn new(source_objects: &Vec<Arc<dyn Hittable>>, start: usize, end: usize) -> Self {
-        let mut rng = rand::thread_rng();
-        let axis = rng.gen_range(0..=2);
+        let axis = random_isize_range(0, 2);
 
         let mut objects = source_objects.clone();
 

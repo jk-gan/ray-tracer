@@ -3,9 +3,9 @@ use glam::DVec3;
 
 #[derive(Clone, Copy, Default)]
 pub struct Ray {
-    origin: Point3,
-    direction: DVec3,
-    time: f64,
+    pub origin: Point3,
+    pub direction: DVec3,
+    pub time: f64,
 }
 
 impl Ray {
@@ -15,18 +15,6 @@ impl Ray {
             direction,
             time,
         }
-    }
-
-    pub fn origin(&self) -> &Point3 {
-        &self.origin
-    }
-
-    pub fn direction(&self) -> &DVec3 {
-        &self.direction
-    }
-
-    pub fn time(&self) -> f64 {
-        self.time
     }
 
     pub fn at(&self, t: f64) -> Point3 {

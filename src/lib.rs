@@ -13,24 +13,45 @@ pub mod scene;
 pub mod texture;
 
 use glam::DVec3;
-use rand::Rng;
+use nanorand::Rng;
 pub type Point3 = DVec3;
 
 #[inline]
-pub fn random_dvec3() -> DVec3 {
-    let mut rng = rand::thread_rng();
+pub fn random_f64() -> f64 {
+    let mut rng = nanorand::tls_rng();
 
-    DVec3::new(rng.gen(), rng.gen(), rng.gen())
+    rng.generate_range(0..=1000) as f64 / 1001.0
+}
+
+#[inline]
+pub fn random_f64_range(min: f64, max: f64) -> f64 {
+    // Returns a random real in [min,max).
+    min + (max - min) * random_f64()
+}
+
+#[inline]
+pub fn random_isize_range(min: isize, max: isize) -> isize {
+    // Returns a random integer in [min,max].
+    random_f64_range(min as f64, (max + 1) as f64) as isize
+}
+
+#[inline]
+pub fn random_usize_range(min: usize, max: usize) -> usize {
+    // Returns a random integer in [min,max].
+    random_f64_range(min as f64, (max + 1) as f64) as usize
+}
+
+#[inline]
+pub fn random_dvec3() -> DVec3 {
+    DVec3::new(random_f64(), random_f64(), random_f64())
 }
 
 #[inline]
 pub fn random_dvec3_range(min: f64, max: f64) -> DVec3 {
-    let mut rng = rand::thread_rng();
-
     DVec3::new(
-        rng.gen_range(min..max),
-        rng.gen_range(min..max),
-        rng.gen_range(min..max),
+        random_f64_range(min, max),
+        random_f64_range(min, max),
+        random_f64_range(min, max),
     )
 }
 
@@ -59,10 +80,12 @@ pub fn random_in_hemisphere(normal: &DVec3) -> DVec3 {
 }
 
 pub fn random_in_unit_disk() -> DVec3 {
-    let mut rng = rand::thread_rng();
-
     loop {
-        let p = DVec3::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), 0.0);
+        let p = DVec3::new(
+            random_f64_range(-1.0, 1.0),
+            random_f64_range(-1.0, 1.0),
+            0.0,
+        );
         if p.length_squared() >= 1.0 {
             continue;
         }
