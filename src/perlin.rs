@@ -83,7 +83,7 @@ impl Perlin {
         perm
     }
 
-    fn permute(perm: &mut Vec<usize>, n: usize) {
+    fn permute(perm: &mut [usize], n: usize) {
         for i in (1..n).rev() {
             let target = random_usize_range(0, i);
             perm.swap(i, target);

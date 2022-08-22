@@ -150,7 +150,7 @@ impl MovingSphere {
         Self {
             center_0,
             center_1,
-            center_vec: DVec3::from(center_1 - center_0),
+            center_vec: (center_1 - center_0),
             radius,
             material,
             bounding_box: Aabb::from_aabbs(&box_0, &box_1),
@@ -237,7 +237,7 @@ impl Hittable for HittableList {
         let mut closest_so_far = ray_t.max;
 
         for object in self.objects.iter() {
-            match object.hit(&ray, Interval::new(ray_t.min, closest_so_far)) {
+            match object.hit(ray, Interval::new(ray_t.min, closest_so_far)) {
                 Some(hitted_record) => {
                     closest_so_far = hitted_record.t;
                     temp_hit_record = Some(hitted_record);
@@ -294,7 +294,7 @@ impl Quad {
         // Given the hit point in plane coordinates, return false if it is outside the primitive,
         // otherwise return true
 
-        !((a < 0.0) || (1.0 < a) || (b < 0.0) || (1.0 < b))
+        !(!(0.0..=1.0).contains(&a) || !(0.0..=1.0).contains(&b))
     }
 }
 
@@ -396,7 +396,7 @@ pub fn create_box(a: &Point3, b: &Point3, material: Arc<Material>) -> HittableLi
         Point3::new(min.x, min.y, min.z),
         dx,
         dz,
-        material.clone(),
+        material,
     )));
 
     sides
@@ -427,9 +427,9 @@ impl Hittable for Translate {
         // Determine where (if any) an intersection occurs along the offset_ray
         if let Some(mut hitted_record) = self.object.hit(&offset_ray, ray_t) {
             hitted_record.point += self.offset;
-            return Some(hitted_record);
+            Some(hitted_record)
         } else {
-            return None;
+            None
         }
     }
 
@@ -519,9 +519,9 @@ impl Hittable for RotationY {
             hitted_record.point = point;
             hitted_record.normal = normal;
 
-            return Some(hitted_record);
+            Some(hitted_record)
         } else {
-            return None;
+            None
         }
     }
 

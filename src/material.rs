@@ -43,7 +43,7 @@ impl Material {
                     reflected + *fuzz * random_in_unit_sphere(),
                     in_ray.time,
                 );
-                let attenuation = albedo.clone();
+                let attenuation = *albedo;
 
                 if scattered_ray.direction.dot(hit_record.normal) > 0.0 {
                     Some((attenuation, scattered_ray))
@@ -93,9 +93,9 @@ impl Material {
 fn near_zero(vector: &DVec3) -> bool {
     let epsilon = 1e-8;
 
-    return (f64::abs(vector.x) < epsilon)
+    (f64::abs(vector.x) < epsilon)
         && (f64::abs(vector.y) < epsilon)
-        && (f64::abs(vector.z) < epsilon);
+        && (f64::abs(vector.z) < epsilon)
 }
 
 fn reflect(v: DVec3, n: DVec3) -> DVec3 {

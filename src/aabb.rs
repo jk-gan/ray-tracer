@@ -2,7 +2,7 @@ use crate::{interval::Interval, ray::Ray, Point3};
 use glam::DVec3;
 use std::ops::Add;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Aabb {
     pub x: Interval,
     pub y: Interval,
@@ -34,17 +34,17 @@ impl Aabb {
         // Return an AABB that has no side narrower than some delta, padding if necessary.
         let delta = 0.0001;
         let new_x = if self.x.size() >= delta {
-            self.x.clone()
+            self.x
         } else {
             self.x.expand(delta)
         };
         let new_y = if self.y.size() >= delta {
-            self.y.clone()
+            self.y
         } else {
             self.y.expand(delta)
         };
         let new_z = if self.z.size() >= delta {
-            self.z.clone()
+            self.z
         } else {
             self.z.expand(delta)
         };
@@ -89,17 +89,7 @@ impl Aabb {
                 return false;
             }
         }
-        return true;
-    }
-}
-
-impl Default for Aabb {
-    fn default() -> Self {
-        Self {
-            x: Interval::default(),
-            y: Interval::default(),
-            z: Interval::default(),
-        }
+        true
     }
 }
 

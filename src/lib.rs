@@ -73,9 +73,9 @@ pub fn random_unit_vertor() -> DVec3 {
 pub fn random_in_hemisphere(normal: &DVec3) -> DVec3 {
     let in_unit_sphere = random_in_unit_sphere();
     if in_unit_sphere.dot(*normal) > 0.0 {
-        return in_unit_sphere;
+        in_unit_sphere
     } else {
-        return -in_unit_sphere;
+        -in_unit_sphere
     }
 }
 

@@ -22,7 +22,7 @@ pub struct Bvh {
 impl Hittable for Bvh {
     fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         if self.bounding_box().hit(ray, ray_t) {
-            let hit_left = self.left.hit(&ray, ray_t);
+            let hit_left = self.left.hit(ray, ray_t);
             let hit_right = match hit_left {
                 Some(ref hit_record) => self.right.hit(ray, Interval::new(ray_t.min, hit_record.t)),
                 None => self.right.hit(ray, Interval::new(ray_t.min, ray_t.max)),
@@ -33,7 +33,7 @@ impl Hittable for Bvh {
                 hit_left
             }
         } else {
-            return None;
+            None
         }
     }
 
@@ -72,7 +72,7 @@ impl Bvh {
                 }
             }
             x => {
-                objects.sort_by(Self::box_compare_a(bounding_box_compare_axis));
+                objects.sort_unstable_by(Self::box_compare_a(bounding_box_compare_axis));
                 let mid = start + x / 2;
                 // let left = Arc::new(Box::new(Self::new(source_objects, start, mid)));
                 // let right = Arc::new(Box::new(Self::new(source_objects, mid, end)));
@@ -84,14 +84,15 @@ impl Bvh {
             }
         };
 
+        let bounding_box = Aabb::from_aabbs(left.bounding_box(), right.bounding_box());
         Self {
-            left: left.clone(),
-            right: right.clone(),
-            bounding_box: Aabb::from_aabbs(left.bounding_box(), right.bounding_box()),
+            left,
+            right,
+            bounding_box,
         }
     }
 
-    pub fn from_list(list: &HittableList) -> Self {
+    pub fn from_list(list: HittableList) -> Self {
         Self::new(&list.objects, 0, list.objects.len())
     }
 

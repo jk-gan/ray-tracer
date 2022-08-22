@@ -50,7 +50,7 @@ impl Hittable for ConstantMedium {
         let enable_debug = false;
         let debugging = enable_debug && random_f64() < 0.00001;
 
-        let mut hit_record_1 = match self.boundary.hit(&ray, Interval::UNIVERSE) {
+        let mut hit_record_1 = match self.boundary.hit(ray, Interval::UNIVERSE) {
             Some(hitted_record) => hitted_record,
             None => {
                 return None;
@@ -59,7 +59,7 @@ impl Hittable for ConstantMedium {
 
         let mut hit_record_2 = match self
             .boundary
-            .hit(&ray, Interval::new(hit_record_1.t + 0.0001, f64::MAX))
+            .hit(ray, Interval::new(hit_record_1.t + 0.0001, f64::MAX))
         {
             Some(hitted_record) => hitted_record,
             None => {
@@ -115,6 +115,6 @@ impl Hittable for ConstantMedium {
     }
 
     fn bounding_box(&self) -> &crate::aabb::Aabb {
-        &self.boundary.bounding_box()
+        self.boundary.bounding_box()
     }
 }

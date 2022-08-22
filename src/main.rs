@@ -56,7 +56,7 @@ fn final_scene(scene: &mut Scene) {
 
     let world = &mut scene.world;
 
-    world.add(Arc::new(Bvh::from_list(&boxes_1)));
+    world.add(Arc::new(Bvh::from_list(boxes_1)));
 
     let light = Arc::new(Material::DiffuseLight {
         emit: Arc::new(SolidColor::new(Color::new(7.0, 7.0, 7.0))),
@@ -164,7 +164,7 @@ fn final_scene(scene: &mut Scene) {
     }
 
     world.add(Arc::new(Translate::new(
-        Arc::new(RotationY::new(Arc::new(Bvh::from_list(&boxes_2)), 15.0)),
+        Arc::new(RotationY::new(Arc::new(Bvh::from_list(boxes_2)), 15.0)),
         &DVec3::new(-100.0, 270.0, 395.0),
     )));
 }
@@ -563,7 +563,8 @@ fn random_scene(scene: &mut Scene) {
     scene.camera.aperture = 0.1;
     scene.camera.focus_dist = 10.0;
 
-    let world = &mut scene.world;
+    // let world = &mut scene.world;
+    let mut world = HittableList::default();
 
     let checker = Arc::new(CheckerTexture::from_colors(
         0.32,

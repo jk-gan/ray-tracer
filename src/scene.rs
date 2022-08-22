@@ -95,7 +95,7 @@ impl Scene {
 
     fn ray_color(&self, ray: Ray, depth: usize) -> Color {
         // if we've exceeded the ray bounce limit, no more light is gathered.
-        if depth <= 0 {
+        if depth == 0 {
             return Color::new(0.0, 0.0, 0.0);
         }
 
@@ -114,12 +114,12 @@ impl Scene {
             {
                 let color_from_scatter = attenuation * self.ray_color(scattered_ray, depth - 1);
 
-                return color_from_emission + color_from_scatter;
+                color_from_emission + color_from_scatter
             } else {
-                return color_from_emission;
+                color_from_emission
             }
         } else {
-            return self.background_color;
+            self.background_color
         }
 
         // let unit_direction = ray.direction().normalize();
