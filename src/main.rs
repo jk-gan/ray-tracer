@@ -20,9 +20,9 @@ const SAMPLES_PER_PIXEL: usize = 100;
 const MAX_DEPTH: usize = 50;
 
 fn final_scene(scene: &mut Scene) {
-    scene.set_image_width(600);
+    scene.set_image_width(800);
     scene.set_aspect_ratio(1.0);
-    scene.samples_per_pixel = 3000;
+    scene.samples_per_pixel = 10000;
     scene.background_color = Color::new(0.0, 0.0, 0.0);
 
     scene.camera.aperture = 0.0;
