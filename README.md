@@ -7,9 +7,17 @@
 <p align="center">A Rust raytracer based on Peter Shirley's <a href="https://raytracing.github.io/books/RayTracingInOneWeekend.html">Ray Tracing in one weekend</a>.
 </p>
 
-![cornell-box](.github/screenshots/cornell.png)
-![book-1-final-render](.github/screenshots/book1-final.png)
-![book-2-final-render](.github/screenshots/book2-final.png)
+<div align="center">
+  <img alt="Cornell Box" src=".github/screenshots/cornell.png" >
+</div>
+
+<div align="center">
+  <img alt="Book 1 Final render" src=".github/screenshots/book1-final.png" >
+</div>
+
+<div align="center">
+  <img alt="Book 2 Final render" src=".github/screenshots/book2-final.png" >
+</div>
 
 ## Instructions
 
