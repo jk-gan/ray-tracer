@@ -61,21 +61,30 @@ impl Scene {
         let total_count = self.image_height * self.image_width as u32;
         let progress_bar = ProgressBar::new(total_count as u64);
 
+        let sqrt_sample_per_pixel = f64::sqrt(self.samples_per_pixel as f64) as usize;
+
         let image = (0..self.image_height)
             .into_par_iter()
             .rev()
             .map(|j| {
+                let v = (j as f64 + random_f64()) / (self.image_height as f64 - 1.0);
+
                 (0..self.image_width)
                     .into_par_iter()
                     .map(|i| {
                         let mut pixel_color = Color::new(0.0, 0.0, 0.0);
 
-                        for _ in 0..self.samples_per_pixel {
-                            let u = (i as f64 + random_f64()) / (self.image_width as f64 - 1.0);
-                            let v = (j as f64 + random_f64()) / (self.image_height as f64 - 1.0);
-
-                            let ray = self.camera.get_ray(u, v);
-                            pixel_color += self.ray_color(ray, self.max_depth);
+                        for s_j in 0..sqrt_sample_per_pixel {
+                            let t = (j as f64
+                                + (s_j as f64 + random_f64()) / sqrt_sample_per_pixel as f64)
+                                / (self.image_height as f64 - 1.0);
+                            for s_i in 0..sqrt_sample_per_pixel {
+                                let s = (i as f64
+                                    + (s_i as f64 + random_f64()) / sqrt_sample_per_pixel as f64)
+                                    / (self.image_width as f64 - 1.0);
+                                let ray = self.camera.get_ray(s, t);
+                                pixel_color += self.ray_color(ray, self.max_depth);
+                            }
                         }
                         progress_bar.inc(1);
                         pixel_color
@@ -83,6 +92,29 @@ impl Scene {
                     .collect::<Vec<Color>>()
             })
             .collect::<Vec<Vec<Color>>>();
+
+        // let image = (0..self.image_height)
+        //     .into_par_iter()
+        //     .rev()
+        //     .map(|j| {
+        //         (0..self.image_width)
+        //             .into_par_iter()
+        //             .map(|i| {
+        //                 let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+
+        //                 for _ in 0..self.samples_per_pixel {
+        //                     let u = (i as f64 + random_f64()) / (self.image_width as f64 - 1.0);
+        //                     let v = (j as f64 + random_f64()) / (self.image_height as f64 - 1.0);
+
+        //                     let ray = self.camera.get_ray(u, v);
+        //                     pixel_color += self.ray_color(ray, self.max_depth);
+        //                 }
+        //                 progress_bar.inc(1);
+        //                 pixel_color
+        //             })
+        //             .collect::<Vec<Color>>()
+        //     })
+        //     .collect::<Vec<Vec<Color>>>();
 
         for row in image {
             for color in row {

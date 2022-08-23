@@ -267,13 +267,16 @@ fn cornell_smoke(scene: &mut Scene) {
 fn cornell_box(scene: &mut Scene) {
     scene.set_image_width(600);
     scene.set_aspect_ratio(1.0);
-    scene.samples_per_pixel = 10000;
+    scene.samples_per_pixel = 64;
+    scene.max_depth = 50;
     scene.background_color = Color::new(0.0, 0.0, 0.0);
 
     scene.camera.aperture = 0.0;
     scene.camera.vfov = 40.0;
     scene.camera.look_from = Point3::new(278.0, 278.0, -800.0);
     scene.camera.look_at = Point3::new(278.0, 278.0, 0.0);
+    scene.camera.vup = DVec3::new(0.0, 1.0, 0.0);
+    scene.camera.focus_dist = 10.0;
 
     let world = &mut scene.world;
 
@@ -671,9 +674,9 @@ fn main() {
     // two_perlin_spheres(&mut scene);
     // quads(&mut scene);
     // simple_light(&mut scene);
-    // cornell_box(&mut scene);
+    cornell_box(&mut scene);
     // cornell_smoke(&mut scene);
-    final_scene(&mut scene);
+    // final_scene(&mut scene);
     // scene.set_image_width(400);
     // scene.samples_per_pixel = 100;
     // scene.max_depth = 4;
