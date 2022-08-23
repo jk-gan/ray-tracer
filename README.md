@@ -17,7 +17,7 @@
   <img alt="Book 1 Final render" src=".github/screenshots/book1-final.png" >
 </div>
 
-*Book 1 final render, 1200 x 800 with 1000x oversampled.*
+*Book 1 final render, 1200 x 800 with 500x oversampled.*
 
 <div align="center">
   <img alt="Book 2 Final render" src=".github/screenshots/book2-final.png" >
