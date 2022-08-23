@@ -11,7 +11,7 @@
   <img alt="Cornell Box" src=".github/screenshots/cornell.png" >
 </div>
 
-*Cornell Box, 600 x 600 with 10000x oversampled.*
+*Cornell Box, 800 x 800 with 20000x oversampled.*
 
 <div align="center">
   <img alt="Book 1 Final render" src=".github/screenshots/book1-final.png" >
