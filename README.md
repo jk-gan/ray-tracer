@@ -11,13 +11,19 @@
   <img alt="Cornell Box" src=".github/screenshots/cornell.png" >
 </div>
 
+*Cornell Box, 600 x 600 with 10000x oversampled.*
+
 <div align="center">
   <img alt="Book 1 Final render" src=".github/screenshots/book1-final.png" >
 </div>
 
+*Book 1 final render, 1200 x 800 with 1000x oversampled.*
+
 <div align="center">
   <img alt="Book 2 Final render" src=".github/screenshots/book2-final.png" >
 </div>
+
+*Book 2 final render, 650 x 650 with 10000x oversampled.*
 
 ## Instructions
 
